@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="capt.intra.logic.dao">
+	
+	<!-- 유저존재 확인 -->
+<!-- 	<select id="getUser" parameterType="capt.intra.entity.dto.UserDto" resultType="capt.intra.entity.vo.UserVo"> -->
+<!-- 		SELECT idx, originId AS origin, id AS username, password, enable -->
+<!-- 		FROM user -->
+<!-- 		WHERE id = #{username} -->
+<!-- 	</select> -->
+	
+	<!-- Refresh Token 조회 -->
+<!-- 	<select id="getRefreshToken" parameterType="capt.intra.entity.dto.RefreshTokenDto" resultType="int"> -->
+<!-- 		SELECT COUNT(device) -->
+<!-- 		FROM remember_me -->
+<!-- 		WHERE id = #{id} -->
+<!-- 			AND device = #{device}; -->
+<!-- 	</select> -->
+	<!-- Refresh Token 저장 -->
+<!-- 	<insert id="createRefreshToken" parameterType="capt.intra.entity.dto.RefreshTokenDto"> -->
+<!-- 		INSERT INTO remember_me(id, device, token) -->
+<!-- 		VALUES(#{id}, #{device}, #{token}); -->
+<!-- 	</insert> -->
+	<!-- Refresh Token 삭제 -->
+<!-- 	<delete id="removeRefreshToken" parameterType="capt.intra.entity.dto.RefreshTokenDto"> -->
+<!-- 		DELETE FROM remember_me -->
+<!-- 		WHERE id = #{id} -->
+<!-- 			AND device = #{device}; -->
+<!-- 	</delete> -->
+	
+	<!-- 로그저장 ( 스케줄 - 매일 오전 6시, 오후 18시 ) -->
+<!-- 	<insert id="createRedisLog" parameterType="java.util.List"> -->
+<!-- 		INSERT INTO log_tracking(userIdx, section, conts, createDate, scheduleDate) -->
+<!-- 		VALUES -->
+<!-- 		Dao에서 List<Map<String, Object>>의 값이 전달됐을 때 collection의 변수 "list"는 고정임. -->
+<!-- 		<foreach collection="list" item="v" separator=","> -->
+<!-- 		(#{v.ino}, #{v.section}, #{v.conts}, #{v.date}, NOW()) -->
+<!-- 		</foreach> -->
+<!-- 	</insert> -->
+	
+	<!-- 사용자의 마지막 접속일을 갱신 -->
+<!-- 	<select id="updateLastLoginDate" parameterType="String"> -->
+<!-- 		UPDATE user -->
+<!-- 		SET loginDate = NOW() -->
+<!-- 		WHERE originId = #{id}; -->
+<!-- 	</select> -->
+	
+</mapper>
