@@ -42,12 +42,12 @@ public class DBConfig {
 		
 		return dataSource;
 		
-	}
+	};
 	
 	@Bean
 	public PlatformTransactionManager transactionManager() throws Exception {
 		return new DataSourceTransactionManager(dataSource());
-	}
+	};
 	
 	@Bean
 	public SqlSessionFactoryBean sqlSessionFactory(DataSource dataSource, ApplicationContext applicationContext) throws Exception {
@@ -58,11 +58,11 @@ public class DBConfig {
 		
 		return sqlSessionFactory;
 		
-	}
+	};
 	
 	@Bean
 	public SqlSessionTemplate sqlSessionTemplate(SqlSessionFactory sqlSessionFactory) {
 		return new SqlSessionTemplate(sqlSessionFactory);
-	}
+	};
 	
 }
