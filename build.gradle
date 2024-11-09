@@ -27,10 +27,8 @@ dependencies {
 	implementation "net.javacrumbs.shedlock:shedlock-spring:5.13.0"
 	implementation "net.javacrumbs.shedlock:shedlock-provider-redis-spring:5.13.0"
 	
-	/** Custom AOP - @AuthzCheck 같은 어노테이션 만들기 위함 */
-	// implementation "org.springframework.boot:spring-boot-starter-aop:3.2.5"
 	/** AWS */
-	// implementation "software.amazon.awssdk:secretsmanager:2.25.55"
+	implementation "software.amazon.awssdk:secretsmanager:2.29.8"
 	
 	/** JWT */
 	implementation "io.jsonwebtoken:jjwt-api:0.12.5"
