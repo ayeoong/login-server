@@ -204,7 +204,7 @@ if(fs.existsSync(src) && fs.existsSync(modules)) {
 				...data.plugins,
 				new webpack.DefinePlugin({ // 컴파일할 코드에서 특정 문자열을 설정한 값으로 치환.
 					"process.env.NODE_ENV": JSON.stringify(`production`),
-					"MAIN_HOST": JSON.stringify(`https://login.intra.captivision.co.kr/`)
+					"MAIN_HOST": JSON.stringify(`https://login.intra.st2lla.co.kr/`)
 				})
 			]
 		}
@@ -219,7 +219,7 @@ if(fs.existsSync(src) && fs.existsSync(modules)) {
 				...data.plugins,
 				new webpack.DefinePlugin({ // 컴파일할 코드에서 특정 문자열을 설정한 값으로 치환.
 					"process.env.NODE_ENV": JSON.stringify(`production`),
-					"MAIN_HOST": JSON.stringify(`https://login.dev.captivision.co.kr/`)
+					"MAIN_HOST": JSON.stringify(`https://login.dev.st2lla.co.kr/`)
 				})
 			]
 		};

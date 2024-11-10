@@ -9,7 +9,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @Configuration
-// server.* 매핑
+// auth.* 매핑
 @ConfigurationProperties(prefix = "auth")
 public class AuthProperties {
 	
