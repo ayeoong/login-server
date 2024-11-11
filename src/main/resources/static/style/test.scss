@@ -1,0 +1,27 @@
+/** Stars */
+#stars {
+	background: url(../image/stars.jpg) no-repeat;
+	background-size: cover;
+	background-position: left bottom;
+}
+
+/** Black Sky Stars */
+.dot-star { fill: #ffffff; stroke: none; stroke-width: 0; }
+
+/** Stars Rating */
+.rating {
+	position: relative;
+	display: inline-block;
+	font-size: 2rem;
+	color: #dddddd;
+	cursor: pointer;
+
+	.gold {
+		color: gold;
+
+		.fa-star-half::after {
+			color: #dddddd;
+			opacity: 1;
+		}
+	}
+}

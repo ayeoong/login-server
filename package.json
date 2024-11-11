@@ -39,6 +39,7 @@
 		"react-app-polyfill": "^3.0.0",
 		"react-dom": "^18.2.0",
 		"sass-loader": "^14.2.1",
+		"styled-components": "^6.1.13",
 		"sweetalert2": "^11.11.0"
 	},
 	"devDependencies": {
