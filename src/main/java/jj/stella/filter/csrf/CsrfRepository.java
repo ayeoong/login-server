@@ -57,13 +57,13 @@ public class CsrfRepository implements CsrfTokenRepository {
 		this.CSRF_PARAMETER = CSRF_PARAMETER;
 		this.CSRF_HEADER = CSRF_HEADER;
 		
-	}
+	};
 	
 	/** CSRF 토큰 생성 */
 	@Override
 	public CsrfToken generateToken(HttpServletRequest req) {
 		return new DefaultCsrfToken(this.CSRF_HEADER, this.CSRF_PARAMETER, createNewToken());
-	}
+	};
 	
 	/** CSRF 토큰을 쿠키에 저장 or 제거 */
 	@Override
@@ -102,7 +102,7 @@ public class CsrfRepository implements CsrfTokenRepository {
 			req.getSession().removeAttribute(this.CSRF_NAME);
 		}
 		
-	}
+	};
 	
 	/**
 	 * CSRF 토큰 로드
@@ -174,7 +174,7 @@ public class CsrfRepository implements CsrfTokenRepository {
 	/** CSRF 토큰을 생성하는 메소드 */
 	private String createNewToken() {
 		return UUID.randomUUID().toString();
-	}
+	};
 	
 	/** ResponseCookie를 일반 Cookie객체로 변환하는 메소드 */
 	private Cookie createCookie(ResponseCookie responseCookie) {
@@ -193,7 +193,7 @@ public class CsrfRepository implements CsrfTokenRepository {
 		
 		return cookie;
 		
-	}
+	};
 	
 	/**
 	 * Getter, Setter 메소드들
@@ -203,34 +203,34 @@ public class CsrfRepository implements CsrfTokenRepository {
 	private String getRequestContext(HttpServletRequest req) {
 		String contextPath = req.getContextPath();
 		return (contextPath.length() > 0)? contextPath:"/";
-	}
+	};
 	/**
 	 * CSRF 쿠키의 경로를 설정
 	 * @param path the path to use
 	 * */
 	public void setCookiePath(String path) {
 		this.cookiePath = path;
-	}
+	};
 	/**
 	 * CSRF 쿠키 경로 호출
 	 * @return the path to be used.
 	 * */
 	public String getCookiePath() {
 		return this.cookiePath;
-	}
+	};
 	
 	public void setParameterName(String CSRF_PARAMETER) {
 		Assert.notNull(CSRF_PARAMETER, "CSRF_PARAMETER cannot be null");
 		this.CSRF_PARAMETER = CSRF_PARAMETER;
-	}
+	};
 	public void setHeaderName(String CSRF_HEADER) {
 		Assert.notNull(CSRF_HEADER, "CSRF_HEADER cannot be null");
 		this.CSRF_HEADER = CSRF_HEADER;
-	}
+	};
 	public void setCookieName(String CSRF_NAME) {
 		Assert.notNull(CSRF_NAME, "CSRF_NAME cannot be null");
 		this.CSRF_NAME = CSRF_NAME;
-	}
+	};
 	
 	/**
 	 * 쿠키 커스터마이저 ( 초기 아무것도 세팅 x )
@@ -260,7 +260,7 @@ public class CsrfRepository implements CsrfTokenRepository {
 	public void setCookieCustomizer(Consumer<ResponseCookie.ResponseCookieBuilder> cookieCustomizer) {
 		Assert.notNull(cookieCustomizer, "cookieCustomizer must not be null");
 		this.cookieCustomizer = cookieCustomizer;
-	}
+	};
 	
 	/**
 	 * Spring Security에서 .csrfTokenRepository(....)
@@ -277,7 +277,7 @@ public class CsrfRepository implements CsrfTokenRepository {
 //		result.cookieHttpOnly = false;
 //		
 //		return result;
-//	}
+//	};
 	
 	/**
 	 * CSRF 쿠키의 HttpOnly 속성을 설정
@@ -288,7 +288,7 @@ public class CsrfRepository implements CsrfTokenRepository {
 	 * */
 //	public void setCookieHttpOnly(boolean cookieHttpOnly) {
 //		this.cookieHttpOnly = cookieHttpOnly;
-//	}
+//	};
 	
 	/**
 	 * CSRF 쿠키의 도메인을 설정
@@ -299,7 +299,7 @@ public class CsrfRepository implements CsrfTokenRepository {
 	 * */
 //	public void setCookieDomain(String cookieDomain) {
 //		this.cookieDomain = cookieDomain;
-//	}
+//	};
 	
 	/**
 	 * CSRF 쿠키의 보안 속성을 설정
@@ -310,7 +310,7 @@ public class CsrfRepository implements CsrfTokenRepository {
 	 * */
 //	public void setSecure(Boolean secure) {
 //		this.secure = secure;
-//	}
+//	};
 	
 	/**
 	 * CSRF 쿠키의 최대 유효 기간을 설정
@@ -322,6 +322,6 @@ public class CsrfRepository implements CsrfTokenRepository {
 //	public void setCookieMaxAge(int cookieMaxAge) {
 //		Assert.isTrue(cookieMaxAge != 0, "cookieMaxAge cannot be zero");
 //		this.cookieMaxAge = cookieMaxAge;
-//	}
+//	};
 	
 }

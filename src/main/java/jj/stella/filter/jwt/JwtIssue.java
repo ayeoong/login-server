@@ -308,10 +308,10 @@ public class JwtIssue extends OncePerRequestFilter {
 	private boolean validateReferer(String referer) {
 		return referer != null && (
 			referer.startsWith("http://localhost")
-			|| referer.startsWith("http://dev.captivision.co.kr")
-			|| referer.startsWith("https://dev.captivision.co.kr")
-			|| referer.startsWith("http://intra.captivision.co.kr")
-			|| referer.startsWith("https://intra.captivision.co.kr")
+			|| referer.startsWith("http://dev.st2lla.co.kr")
+			|| referer.startsWith("https://dev.st2lla.co.kr")
+			|| referer.startsWith("http://intra.st2lla.co.kr")
+			|| referer.startsWith("https://intra.st2lla.co.kr")
 		) && !referer.startsWith("http://localhost:8080");
 	};
 	
