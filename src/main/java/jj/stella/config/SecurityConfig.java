@@ -174,7 +174,7 @@ public class SecurityConfig {
 				.maxSessionsPreventsLogin(false)
 				.expiredUrl("/")
 			).build();
-	}
+	};
 	
 	/** 비밀번호 암호화 ( 단방향 복호화 불가능 ) */
 	@Bean
@@ -183,17 +183,17 @@ public class SecurityConfig {
 		PasswordEncoder encoder = new BCryptPasswordEncoder();
 		return encoder;
 		
-	}
+	};
 	
 	/** 사용자 인증 */
 	@Bean
 	public AuthenticationManager AuthenticationManager(AuthenticationConfiguration auth) throws Exception {
 		return auth.getAuthenticationManager();
-	}
+	};
 	@Autowired
 	protected void configure(AuthenticationManagerBuilder auth) throws Exception {
 		auth.authenticationProvider(authProvider);
-	}
+	};
 	
 	/** CORS 정책 수립 */
 	@Bean
@@ -227,7 +227,7 @@ public class SecurityConfig {
 		
 		return source;
 		
-	}
+	};
 	
 	/** session control */
 	@Bean
