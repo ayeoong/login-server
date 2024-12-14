@@ -58,16 +58,20 @@ export const String = memo(({ data, holder, focus, onChange }:Define) => {
 	}, [str]);
 
 	return (
-	<input
-		ref={ref}
-		type={`text`}
-		value={str}
-		placeholder={holder}
-		onFocus={onFocus}
-		onBlur={onBlur}
-		onChange={onStr}
-		spellCheck={false}
-	/>
+	<div className={`form-floating`}>
+		<input
+		className={`form-control`}
+			ref={ref}
+			type={`text`}
+			value={str}
+			placeholder={holder}
+			onFocus={onFocus}
+			onBlur={onBlur}
+			onChange={onStr}
+			spellCheck={false}
+		/>
+		<label>{holder}</label>
+	</div>
 	);
 
 });

@@ -30,7 +30,7 @@ const Main = () => {
 			v.classList.remove(`on`)
 		});
 		
-		if (target) {
+		if(target) {
 			(target.lastChild as HTMLElement).focus();
 			target.classList.add("on");
 		}
@@ -122,10 +122,11 @@ const Main = () => {
 				<div className={`login-section`}>
 					<div className={`login`}>
 						<div className={`login-logo`}>
-							<span>
+							{/* <span>
 								<i className={`fal fa-user`} />
-							</span>
-							<p>{`Sign In`}</p>
+							</span> */}
+							<p>{`Welcome,`}</p>
+							<span>{`Sign in to Continue !`}</span>
 						</div>
 						<form onSubmit={onLogin}>
 							<div className={`login-input`}>
