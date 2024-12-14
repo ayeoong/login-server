@@ -20,7 +20,7 @@ public class UserVo implements UserDetails {
 	private String name;
 	private String id;
 	private String password;
-	private String email;
+	private String tempPassword;
 	private boolean enable;
 	
 	@Override

@@ -2,7 +2,6 @@ import "react-app-polyfill/ie11";
 import "react-app-polyfill/stable";
 import "../style/global.scss";
 import "../style/main.scss";
-import "../style/test.scss";
 /** FontAwesome */
 import "@fortawesome/fontawesome-pro/css/all.min.css";
 
@@ -62,7 +61,8 @@ console.log(
 
 console.log('>> %chttps://st2lla.co.kr', "font-family:story; font-weight: bold;");
 
-const root = ReactDOM.createRoot(document.getElementById(`root`) as HTMLElement);
+const container = document.getElementById(`root`) as HTMLElement;
+const root = ReactDOM.createRoot(container);
 root.render(
 	<Main />
 );

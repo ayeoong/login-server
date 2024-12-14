@@ -56,7 +56,7 @@ public class AuthProvider implements AuthenticationProvider {
 //		User principal = new User(username, password, authorityRoles);
 		
 		/** 사용자의 마지막 접속일을 갱신 */
-		updateLastLoginDate(username);
+		// updateLastLoginDate(username);
 		
 //		return new UsernamePasswordAuthenticationToken(principal, password, authorityRoles);
 		return new UsernamePasswordAuthenticationToken(username, password, authorityRoles);
@@ -79,12 +79,12 @@ public class AuthProvider implements AuthenticationProvider {
 			throw new UsernameNotFoundException("존재하지 않는 사용자입니다.");
 		
 		/** 로그인 시도 로그 */
-		try {
-			redisService.setLog(RedisLog.loginTrial(user.getIdx(), id, (AuthDetails) object));
-		}
+//		try {
+//			redisService.setLog(RedisLog.loginTrial(user.getIdx(), id, (AuthDetails) object));
+//		}
 		
 		/** Redis PrintStackTrace */
-		catch(Exception e) { e.printStackTrace(); }
+//		catch(Exception e) { e.printStackTrace(); }
 		
 		/** Password 확인 */
 		if(!encoder.matches(password, user.getPassword()))
