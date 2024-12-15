@@ -1,4 +1,4 @@
-import React, { memo, useCallback, useEffect, useRef, useState } from "react";
+import React, { Fragment, memo, useCallback, useEffect, useRef, useState } from "react";
 
 interface Define {data:string; holder:string; onChange:(v:string) => void; onCapsLock:(v:boolean) => void;};
 export const Password = memo(({ data, holder, onChange, onCapsLock }:Define) => {
@@ -60,17 +60,20 @@ export const Password = memo(({ data, holder, onChange, onCapsLock }:Define) => 
 	}, [str]);
 
 	return (
-	<input
-		ref={ref}
-		type={`password`}
-		value={str}
-		placeholder={holder}
-		onFocus={onFocus}
-		onBlur={onBlur}
-		onChange={onStr}
-		onKeyDown={onKeyDown}
-		spellCheck={false}
-	/>
+	<Fragment>
+		<input ref={ref}
+			className={`input-control`}
+			type={`password`}
+			value={str}
+			placeholder={holder}
+			onFocus={onFocus}
+			onBlur={onBlur}
+			onChange={onStr}
+			onKeyDown={onKeyDown}
+			spellCheck={false}
+		/>
+		<label>{holder}</label>
+	</Fragment>
 	);
 
 });

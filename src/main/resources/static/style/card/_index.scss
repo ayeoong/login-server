@@ -1,0 +1,12 @@
+@import "settings";
+
+.card {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+	margin-bottom: calc(1.275rem + 0.3vw);
+	// border: var(--bs--border-width) solid var(--bs--border-color);
+	background-color: var($card-bg);
+	box-shadow: 0 1.6rem 3rem rgba(0, 0, 0, 0.1);
+}

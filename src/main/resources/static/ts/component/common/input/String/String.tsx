@@ -1,4 +1,4 @@
-import React, { memo, useCallback, useEffect, useRef, useState } from "react";
+import React, { Fragment, memo, useCallback, useEffect, useRef, useState } from "react";
 
 type Define = {data:string; holder:string; focus?:boolean; onChange:(v:string) => void;}|
 	{data:string; holder:string; focus:boolean; onChange:(v:string) => void;};
@@ -58,10 +58,9 @@ export const String = memo(({ data, holder, focus, onChange }:Define) => {
 	}, [str]);
 
 	return (
-	<div className={`form-floating`}>
-		<input
-		className={`form-control`}
-			ref={ref}
+	<Fragment>
+		<input ref={ref}
+			className={`input-control`}
 			type={`text`}
 			value={str}
 			placeholder={holder}
@@ -71,7 +70,7 @@ export const String = memo(({ data, holder, focus, onChange }:Define) => {
 			spellCheck={false}
 		/>
 		<label>{holder}</label>
-	</div>
+	</Fragment>
 	);
 
 });
