@@ -129,12 +129,12 @@ const Main = () => {
 						<div className={`login-body`}>
 
 
-							<div className={`login-logo`}>
+							{/* <div className={`login-logo`}>
 								<h1>{`St2lla Server`}</h1>
 								<h1>{`St2lla Server`}</h1>
 								<h1>{`St2lla Server`}</h1>
 								<h1>{`St2lla Server`}</h1>
-							</div>
+							</div> */}
 							<div className={`login-welcome`}>
 								<p>{`Welcome,`}</p>
 								<p>{`Sign in to Continue !`}</p>
