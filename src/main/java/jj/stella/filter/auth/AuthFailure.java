@@ -32,21 +32,21 @@ public class AuthFailure implements AuthenticationFailureHandler {
 	@Override
 	public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response, AuthenticationException exception) throws IOException, ServletException {
 		
-		String id = request.getParameter("username");
-		
-		/** Redis 로그를 위한 조회 */
-		UserVo user = getUser(encryptName(id));
-		if(user != null) {
-			
-			/** 로그인 실패 로그 */
-			try {
-				redisService.setLog(RedisLog.loginFailure(user.getIdx(), id));
-			}
-			
-			/** Redis PrintStackTrace */
-			catch(Exception e) { e.printStackTrace(); }
-			
-		}
+//		String id = request.getParameter("username");
+//		
+//		/** Redis 로그를 위한 조회 */
+//		UserVo user = getUser(encryptName(id));
+//		if(user != null) {
+//			
+//			/** 로그인 실패 로그 */
+//			try {
+//				redisService.setLog(RedisLog.loginFailure(user.getIdx(), id));
+//			}
+//			
+//			/** Redis PrintStackTrace */
+//			catch(Exception e) { e.printStackTrace(); }
+//			
+//		}
 		
 		response.setContentType(MediaType.APPLICATION_JSON_VALUE);
 		response.setCharacterEncoding("UTF-8");

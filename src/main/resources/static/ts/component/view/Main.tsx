@@ -147,11 +147,11 @@ const Main = () => {
 								<div className={`noti-text`}>
 									<div>
 										<strong>{`ID: `}</strong>
-										<span>{`Aasdfaseong`}</span>
+										<span>{`st2lla-test`}</span>
 									</div>
 									<div>
 										<strong>{`Password: `}</strong>
-										<span>{`ascaeapg`}</span>
+										<span>{`test!Q3w`}</span>
 									</div>
 								</div>
 								<button type={`button`} className={`btn-close`} onClick={() => setNoti(false)} />

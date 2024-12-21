@@ -205,7 +205,6 @@ public class SecurityConfig {
 		corsConfig.setAllowCredentials(true);
 		corsConfig.setMaxAge(3600L);
 		corsConfig.setAllowedMethods(Arrays.asList("GET", "POST"));
-		
 		corsConfig.setAllowedHeaders(
 			Arrays.asList(
 				"Content-Type",

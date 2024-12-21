@@ -17,19 +17,13 @@ public class UserVo implements UserDetails {
 	
 	private int idx;
 	private String origin;
-	private String name;
-	private String id;
+	private String username;
 	private String password;
 	private String tempPassword;
 	private boolean enable;
 	
 	@Override
 	public Collection<? extends GrantedAuthority> getAuthorities() {
-		return null;
-	};
-	
-	@Override
-	public String getUsername() {
 		return null;
 	};
 	

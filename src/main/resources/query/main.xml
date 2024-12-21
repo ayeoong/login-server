@@ -4,7 +4,8 @@
 	
 	<!-- 유저존재 확인 -->
 	<select id="getUser" parameterType="jj.stella.entity.dto.UserDto" resultType="jj.stella.entity.vo.UserVo">
-		SELECT idx, originId AS origin, id AS username, password, tempPassword
+		SELECT idx, originId AS origin, id AS username
+			, password, tempPassword, enable
 		FROM user
 		WHERE id = #{username}
 	</select>

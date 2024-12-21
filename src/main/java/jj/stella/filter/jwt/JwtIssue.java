@@ -103,13 +103,13 @@ public class JwtIssue extends OncePerRequestFilter {
 			
 			/** 로그인 성공 로그 */
 			/** Redis 로그를 위한 조회 */
-			UserVo user = getUser(encryptName(id));
-			try {
-				redisService.setLog(RedisLog.loginSuccess(user.getIdx(), id, details));
-			}
-			
-			/** Redis PrintStackTrace */
-			catch(Exception e) { e.printStackTrace(); }
+//			UserVo user = getUser(encryptName(id));
+//			try {
+//				redisService.setLog(RedisLog.loginSuccess(user.getIdx(), id, details));
+//			}
+//			
+//			/** Redis PrintStackTrace */
+//			catch(Exception e) { e.printStackTrace(); }
 			
 			/**
 			 * 어디로 Redirect 할 것인지 설정
