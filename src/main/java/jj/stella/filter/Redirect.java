@@ -39,7 +39,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import jj.stella.entity.dto.RefreshTokenDto;
 import jj.stella.entity.dto.ReissueDto;
-import jj.stella.repository.dao.CommonDao;
+import jj.stella.repository.dao.AuthDao;
 
 public class Redirect extends OncePerRequestFilter {
 	
@@ -61,7 +61,7 @@ public class Redirect extends OncePerRequestFilter {
 	private Key JWT_ENCRYPT_TOKEN;
 	private String AUTH_SERVER;
 	private String HOME_SERVER;
-	private CommonDao commonDao;
+	private AuthDao authDao;
 	RedisTemplate<String, String> redisTemplate;
 	private final AntPathMatcher pathMatcher = new AntPathMatcher();
 	public Redirect(
@@ -69,7 +69,7 @@ public class Redirect extends OncePerRequestFilter {
 		String JWT_ISSUER, String JWT_AUDIENCE, String JWT_EXPIRED,
 		String JWT_DOMAIN, String JWT_PATH, String JTI_SERVER,
 		Key JWT_ENCRYPT_SIGN, Key JWT_ENCRYPT_TOKEN, 
-		String AUTH_SERVER, String HOME_SERVER, CommonDao commonDao,
+		String AUTH_SERVER, String HOME_SERVER, AuthDao authDao,
 		RedisTemplate<String, String> redisTemplate
 	) {
 		this.JWT_HEADER = JWT_HEADER;
@@ -85,7 +85,7 @@ public class Redirect extends OncePerRequestFilter {
 		this.JWT_ENCRYPT_TOKEN = JWT_ENCRYPT_TOKEN;
 		this.AUTH_SERVER = AUTH_SERVER;
 		this.HOME_SERVER = HOME_SERVER;
-		this.commonDao = commonDao;
+		this.authDao = authDao;
 		this.redisTemplate = redisTemplate;
 	}
 	
@@ -260,7 +260,7 @@ public class Redirect extends OncePerRequestFilter {
 	
 	/** 사용자의 마지막 접속일을 갱신 */
 	private void updateLastLoginDate(String id) {
-		commonDao.updateLastLoginDate(id);
+//		authDao.updateLastLoginDate(id);
 	};
 	
 	/** 리소스 경로가 아니거나, /refresh 경로 + 특정조건 맞지 않는 경우 */
@@ -387,8 +387,8 @@ public class Redirect extends OncePerRequestFilter {
 	
 	/** Remember Me - Refresh Token 제거 */
 	private void clearRefreshToken(RefreshTokenDto dto) {
-		if(commonDao.getRefreshToken(dto) >= 1)
-			commonDao.removeRefreshToken(dto);
+		if(authDao.getRefreshToken(dto) >= 1)
+			authDao.delRefreshToken(dto);
 	};
 	
 	/** 쿠키 제거 */

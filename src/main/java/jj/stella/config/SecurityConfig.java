@@ -35,15 +35,14 @@ import jj.stella.filter.auth.AuthDetailsSource;
 import jj.stella.filter.auth.AuthFailure;
 import jj.stella.filter.auth.AuthLogout;
 import jj.stella.filter.auth.AuthProvider;
-import jj.stella.filter.auth.AuthSuccess;
 import jj.stella.filter.csrf.Csrf;
 import jj.stella.filter.csrf.CsrfHandler;
 import jj.stella.filter.csrf.CsrfRepository;
 import jj.stella.filter.jwt.JwtIssue;
 import jj.stella.properties.AuthProperties;
 import jj.stella.properties.ServerProperties;
-import jj.stella.repository.dao.CommonDao;
-import jj.stella.repository.service.RedisService;
+import jj.stella.repository.dao.AuthDao;
+import jj.stella.util.auth.AuthUtil;
 
 @Configuration
 @EnableWebSecurity
@@ -57,7 +56,7 @@ public class SecurityConfig {
 	};
 	
 	private static final String[] WHITE_LIST = {
-		"/resources/**", "/favicon.ico", "/", "/logout"
+		"/resources/**", "/static/**", "/favicon.ico", "/", "/logout"
 	};
 	
 	/**
@@ -65,9 +64,9 @@ public class SecurityConfig {
 	 * 생명주기 밖에서 생성되기 때문에 null로 초기화 됨. 
 	 */
 	@Autowired
-	private CommonDao commonDao;
+	private AuthDao authDao;
 	@Autowired
-	private RedisService redisService;
+	private AuthUtil authUtil;
 	
 	/** 사용자 인증 */
 	@Autowired
@@ -107,7 +106,6 @@ public class SecurityConfig {
 		String AUTH_SERVER = serverProperties.getAuth();
 		String JTI_SERVER = serverProperties.getJti();
 		String HOME_SERVER = serverProperties.getHome();
-		String LOGIN_SERVER = serverProperties.getLogin();
 		String ORIGIN_IP_API = serverProperties.getApi().getOriginIp();
 		
 		return http
@@ -130,17 +128,18 @@ public class SecurityConfig {
 					// IP나 User-Agent를 접근하려는 HttpServletRequest를 사용할 수 없어서
 					// 해당 라인을 추가함.
 					.authenticationDetailsSource(new AuthDetailsSource(ORIGIN_IP_API))
-					// 성공 후 JWT 발급 + 리다이렉트 해야하므로 주석처리
-					// .successHandler(successUtil())
-					.successHandler(new AuthSuccess(LOGIN_SERVER))
-					.failureHandler(new AuthFailure(commonDao, redisService))
+					// 성공 후 처리는 JwtIssue에서 진행함
+					// - .addFilterAfter(new JwtIssue(...), UsernamePasswordAuthenticationFilter.class)
+					//  > UsernamePasswordAuthenticationFilter.class 이후 = 로그인 성공 이후
+					//  > .successHandler(new AuthSuccess(LOGIN_SERVER)) 사용 안함
+					.failureHandler(new AuthFailure(authDao, authUtil))
 			)
 			.logout(logout ->
 				logout
 					.logoutRequestMatcher(new AntPathRequestMatcher("/logout"))
 					.logoutSuccessHandler(new AuthLogout(
 						JWT_HEADER, JWT_KEY, JWT_NAME, JWT_DOMAIN, JWT_PATH,
-						JTI_SERVER, commonDao, redisTemplate
+						JTI_SERVER, authDao, redisTemplate
 					))
 			)
 			.authorizeHttpRequests(auth ->
@@ -155,7 +154,7 @@ public class SecurityConfig {
 				JWT_HEADER, JWT_KEY, JWT_NAME, JWT_ISSUER, JWT_AUDIENCE, JWT_EXPIRED,
 				JWT_DOMAIN, JWT_PATH, JTI_SERVER,
 				encryptSignKey(JWT_ENCRYPT_SIGN), encryptTokenKey(JWT_ENCRYPT_TOKEN),
-				AUTH_SERVER, HOME_SERVER, commonDao, redisTemplate
+				AUTH_SERVER, HOME_SERVER, authDao, redisTemplate
 			), UsernamePasswordAuthenticationFilter.class)
 			// 로그인, 로그아웃 이후 응답헤더에 XSRF-TOKEN을 보내기 위함. ( 갱신 )
 			.addFilterAfter(new Csrf(), CsrfFilter.class)
@@ -165,7 +164,7 @@ public class SecurityConfig {
 				JWT_REFRESH_ISSUER, JWT_REFRESH_AUDIENCE, JWT_DOMAIN, JWT_PATH, JWT_EXPIRED,
 				encryptSignKey(JWT_ENCRYPT_SIGN), encryptTokenKey(JWT_ENCRYPT_TOKEN),
 				encryptSignKey(JWT_ENCRYPT_REFRESH_SIGN), encryptTokenKey(JWT_ENCRYPT_REFRESH_TOKEN),
-				HOME_SERVER, commonDao, redisService, redisTemplate
+				HOME_SERVER, authDao, redisTemplate
 			), UsernamePasswordAuthenticationFilter.class)
 			.sessionManagement(session -> session 
 				.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
