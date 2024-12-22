@@ -15,7 +15,7 @@ public class UserVo implements UserDetails {
 	// default
 	private static final long serialVersionUID = 1L;
 	
-	private int idx;
+	private int ino;
 	private String origin;
 	private String username;
 	private String password;

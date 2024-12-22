@@ -5,7 +5,7 @@ import org.springframework.boot.web.server.WebServerFactoryCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import jj.stella.util.CookieUtil;
+import jj.stella.util.cookie.CookieProcessor;
 
 /**
  * 쿠키를 설정할 때 도메인을 아래와 같이 설정할 수 있음.
@@ -18,7 +18,7 @@ import jj.stella.util.CookieUtil;
  * 
  * java servlet에서는 쿠키의 보안을 위해서, 범용적인 사용을 막기 위해 하위 도메인에서 사용하지 못하도록 차단함
  * 그리고, Spring Boot에서 사용되는 내장형 Tomcat은 도메인에 "."을 시작하는 쿠키 형식(version 0)을 제공하지 않는다.
- * 이를 해결하기 위해 CookieUtil( 커스텀 CookieProcessor ) 생성 후 적용시켜줌
+ * 이를 해결하기 위해 커스텀 CookieProcessor 생성 후 적용시켜줌
  */
 @Configuration
 public class CookieConfig {
@@ -26,7 +26,7 @@ public class CookieConfig {
 	@Bean
 	public WebServerFactoryCustomizer<TomcatServletWebServerFactory> cookieProcessorCustomizer() {
 		return factory -> factory.addContextCustomizers(context -> {
-			context.setCookieProcessor(new CookieUtil());
+			context.setCookieProcessor(new CookieProcessor());
 		});
 	};
 	

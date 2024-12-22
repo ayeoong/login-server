@@ -4,11 +4,20 @@
 	
 	<!-- 유저존재 확인 -->
 	<select id="getUser" parameterType="jj.stella.entity.dto.UserDto" resultType="jj.stella.entity.vo.UserVo">
-		SELECT idx, originId AS origin, id AS username
+		SELECT idx AS ino, originId AS origin, id AS username
 			, password, tempPassword, enable
 		FROM user
 		WHERE id = #{username}
 	</select>
+	
+	<!-- 로그인 결과 저장 -->
+	<insert id="regLoginResult" parameterType="jj.stella.entity.dto.ResultDto">
+		<selectKey resultType="int" keyProperty="ino" order="BEFORE">
+			SELECT idx FROM user WHERE id=#{id}
+		</selectKey>
+		INSERT INTO login_result(userIdx, type, ip)
+		VALUES (#{ino}, #{type}, #{ip});
+	</insert>
 	
 	<!-- Refresh Token 조회 -->
 	<select id="getRefreshToken" parameterType="jj.stella.entity.dto.RefreshTokenDto" resultType="int">
@@ -30,20 +39,20 @@
 	</delete>
 	
 	<!-- 로그저장 ( 스케줄 - 매일 오전 6시, 오후 18시 ) -->
-	<insert id="createRedisLog" parameterType="java.util.List">
-		INSERT INTO log_tracking(userIdx, section, conts, createDate, scheduleDate)
-		VALUES
-		<!-- Dao에서 List<Map<String, Object>>의 값이 전달됐을 때 collection의 변수 "list"는 고정임. -->
-		<foreach collection="list" item="v" separator=",">
-		(#{v.ino}, #{v.section}, #{v.conts}, #{v.date}, NOW())
-		</foreach>
-	</insert>
+<!-- 	<insert id="createRedisLog" parameterType="java.util.List"> -->
+<!-- 		INSERT INTO log_tracking(userIdx, section, conts, createDate, scheduleDate) -->
+<!-- 		VALUES -->
+<!-- 		Dao에서 List<Map<String, Object>>의 값이 전달됐을 때 collection의 변수 "list"는 고정임. -->
+<!-- 		<foreach collection="list" item="v" separator=","> -->
+<!-- 		(#{v.ino}, #{v.section}, #{v.conts}, #{v.date}, NOW()) -->
+<!-- 		</foreach> -->
+<!-- 	</insert> -->
 	
 	<!-- 사용자의 마지막 접속일을 갱신 -->
-	<select id="updateLastLoginDate" parameterType="String">
-		UPDATE user
-		SET loginDate = NOW()
-		WHERE originId = #{id};
-	</select>
+<!-- 	<select id="updateLastLoginDate" parameterType="String"> -->
+<!-- 		UPDATE user -->
+<!-- 		SET loginDate = NOW() -->
+<!-- 		WHERE originId = #{id}; -->
+<!-- 	</select> -->
 	
 </mapper>
