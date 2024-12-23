@@ -15,21 +15,15 @@ public class UserVo implements UserDetails {
 	// default
 	private static final long serialVersionUID = 1L;
 	
-	private int idx;
+	private int ino;
 	private String origin;
-	private String name;
-	private String id;
+	private String username;
 	private String password;
-	private String email;
+	private String tempPassword;
 	private boolean enable;
 	
 	@Override
 	public Collection<? extends GrantedAuthority> getAuthorities() {
-		return null;
-	};
-	
-	@Override
-	public String getUsername() {
 		return null;
 	};
 	

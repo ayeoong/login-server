@@ -13,7 +13,6 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import jj.stella.repository.dao.CommonDao;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 
 @Component
@@ -21,9 +20,6 @@ public class ScheduleConfig {
 
 	@Value("${server.production.mode}")
 	private boolean isProduction;
-	
-	@Autowired
-	private CommonDao commonDao;
 	
 	@Autowired
 	private RedisTemplate<String, Object> redisTemplate;
@@ -54,7 +50,8 @@ public class ScheduleConfig {
 				
 			};
 			
-			int cnt = commonDao.createRedisLog(dataArr);
+//			int cnt = authDao.regRedisLog(dataArr);
+			int cnt = 1;
 			if(cnt >= 1 && !logKeys.isEmpty()) {
 				redisTemplate.delete(logKeys);
 				System.out.println("======= " + logKeys.size() + " log(s) deleted from Redis. =======");
