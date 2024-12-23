@@ -71,7 +71,9 @@ public class CookieProcessor extends CookieProcessorBase {
 					log.debug("Cookies: Parsing b[]: " + cookieValue.toString());
 				
 				ByteChunk bc = cookieValue.getByteChunk();
-				Cookie.parseCookie(bc.getBytes(), bc.getOffset(), bc.getLength(), serverCookies);
+				Cookie.parseCookie(bc.getBytes(), bc.getStart(), bc.getLength(), serverCookies,
+						getCookiesWithoutEqualsInternal());
+				
 			}
 			
 			// search from the next position
