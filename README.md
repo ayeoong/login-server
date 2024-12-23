@@ -24,11 +24,128 @@ asdfasdfsdfasdfasdf
 
 ### 🧑‍🤝‍🧑 맴버구성
  - 팀장  : 오수민 - ASDF
+ - 팀원  : 김아영
  
 ### ⚙️ 개발 환경
 - `Java 17`
 - `JDK 17.0.6`
-- **IDE** : STS 4.17.2, VSCode
+- **IDE** : STS 4.17.2, VSCode, IntelliJ IDEA
 - **Framework** : Spring Boot 3.x
 - **Database** : MySQL
 - **ORM** : Mybatis
+
+### 프로젝트 파일 구조
+<details>
+<summary>BACKEND</summary>
+
+```plaintext
+LOGIN-SERVER\SRC\MAIN
+📦java
+ ┗ 📂jj
+ ┃ ┗ 📂stella
+ ┃ ┃ ┣ 📂config
+ ┃ ┃ ┃ ┣ 📜CookieConfig.java
+ ┃ ┃ ┃ ┣ 📜DBConfig.java
+ ┃ ┃ ┃ ┣ 📜RedisConfig.java
+ ┃ ┃ ┃ ┣ 📜ScheduleConfig.java
+ ┃ ┃ ┃ ┣ 📜ScheduleLockConfig.java
+ ┃ ┃ ┃ ┣ 📜SecurityConfig.java
+ ┃ ┃ ┃ ┗ 📜WebMvcConfig.java
+ ┃ ┃ ┣ 📂controller
+ ┃ ┃ ┃ ┗ 📜MainController.java
+ ┃ ┃ ┣ 📂entity
+ ┃ ┃ ┃ ┣ 📂dto
+ ┃ ┃ ┃ ┃ ┣ 📜RedisDto.java
+ ┃ ┃ ┃ ┃ ┣ 📜RefreshTokenDto.java
+ ┃ ┃ ┃ ┃ ┣ 📜ReissueDto.java
+ ┃ ┃ ┃ ┃ ┗ 📜UserDto.java
+ ┃ ┃ ┃ ┗ 📂vo
+ ┃ ┃ ┃ ┃ ┗ 📜UserVo.java
+ ┃ ┃ ┣ 📂filter
+ ┃ ┃ ┃ ┣ 📂auth
+ ┃ ┃ ┃ ┃ ┣ 📜AuthDetails.java
+ ┃ ┃ ┃ ┃ ┣ 📜AuthDetailsSource.java
+ ┃ ┃ ┃ ┃ ┣ 📜AuthFailure.java
+ ┃ ┃ ┃ ┃ ┣ 📜AuthLogout.java
+ ┃ ┃ ┃ ┃ ┣ 📜AuthProvider.java
+ ┃ ┃ ┃ ┃ ┗ 📜AuthSuccess.java
+ ┃ ┃ ┃ ┣ 📂csrf
+ ┃ ┃ ┃ ┃ ┣ 📜Csrf.java
+ ┃ ┃ ┃ ┃ ┣ 📜CsrfHandler.java
+ ┃ ┃ ┃ ┃ ┗ 📜CsrfRepository.java
+ ┃ ┃ ┃ ┣ 📂jwt
+ ┃ ┃ ┃ ┃ ┗ 📜JwtIssue.java
+ ┃ ┃ ┃ ┣ 📜Redirect.java
+ ┃ ┃ ┃ ┗ 📜TrailingSlash.java
+ ┃ ┃ ┣ 📂properties
+ ┃ ┃ ┃ ┣ 📜AuthProperties.java
+ ┃ ┃ ┃ ┗ 📜ServerProperties.java
+ ┃ ┃ ┣ 📂repository
+ ┃ ┃ ┃ ┣ 📂dao
+ ┃ ┃ ┃ ┃ ┣ 📜CommonDao.java
+ ┃ ┃ ┃ ┃ ┗ 📜CommonDaoImpl.java
+ ┃ ┃ ┃ ┗ 📂service
+ ┃ ┃ ┃ ┃ ┣ 📜CommonService.java
+ ┃ ┃ ┃ ┃ ┣ 📜CommonServiceImpl.java
+ ┃ ┃ ┃ ┃ ┗ 📜RedisService.java
+ ┃ ┃ ┣ 📂util
+ ┃ ┃ ┃ ┣ 📜CookieUtil.java
+ ┃ ┃ ┃ ┣ 📜RedisLog.java
+ ┃ ┃ ┃ ┣ 📜RedisUtil.java
+ ┃ ┃ ┃ ┣ 📜SHA256.java
+ ┃ ┃ ┃ ┗ 📜Verification.java
+ ┃ ┃ ┗ 📜Application.java
+```
+</details>
+
+<details>
+<summary>FRONTEND</summary>
+
+```plaintext
+LOGIN-SERVER\SRC\MAIN\RESOURCES
+📦static
+ ┣ 📂style
+ ┃ ┣ 📂card
+ ┃ ┃ ┣ 📜_index.scss
+ ┃ ┃ ┗ 📜_settings.scss
+ ┃ ┣ 📜animation.scss
+ ┃ ┣ 📜breakpoint.scss
+ ┃ ┣ 📜global.scss
+ ┃ ┗ 📜main.scss
+ ┗ 📂ts
+ ┃ ┣ 📂component
+ ┃ ┃ ┣ 📂common
+ ┃ ┃ ┃ ┣ 📂alert
+ ┃ ┃ ┃ ┃ ┣ 📂Error
+ ┃ ┃ ┃ ┃ ┃ ┗ 📜index.ts
+ ┃ ┃ ┃ ┃ ┣ 📂Success
+ ┃ ┃ ┃ ┃ ┃ ┗ 📜index.ts
+ ┃ ┃ ┃ ┃ ┣ 📂Warning
+ ┃ ┃ ┃ ┃ ┃ ┗ 📜index.ts
+ ┃ ┃ ┃ ┃ ┗ 📜index.ts
+ ┃ ┃ ┃ ┣ 📂background
+ ┃ ┃ ┃ ┃ ┣ 📂Snow
+ ┃ ┃ ┃ ┃ ┃ ┣ 📜index.ts
+ ┃ ┃ ┃ ┃ ┃ ┗ 📜Snow.tsx
+ ┃ ┃ ┃ ┃ ┣ 📂Stars
+ ┃ ┃ ┃ ┃ ┃ ┣ 📜index.ts
+ ┃ ┃ ┃ ┃ ┃ ┗ 📜Stars.tsx
+ ┃ ┃ ┃ ┃ ┗ 📜index.ts
+ ┃ ┃ ┃ ┣ 📂input
+ ┃ ┃ ┃ ┃ ┣ 📂Password
+ ┃ ┃ ┃ ┃ ┃ ┣ 📜index.ts
+ ┃ ┃ ┃ ┃ ┃ ┗ 📜Password.tsx
+ ┃ ┃ ┃ ┃ ┣ 📂String
+ ┃ ┃ ┃ ┃ ┃ ┣ 📜index.ts
+ ┃ ┃ ┃ ┃ ┃ ┗ 📜String.tsx
+ ┃ ┃ ┃ ┃ ┣ 📜index.ts
+ ┃ ┃ ┃ ┃ ┗ 📜InputPassword.tsx
+ ┃ ┃ ┃ ┗ 📜DarkMode.tsx
+ ┃ ┃ ┗ 📂view
+ ┃ ┃ ┃ ┗ 📜Main.tsx
+ ┃ ┣ 📂config
+ ┃ ┃ ┗ 📂type
+ ┃ ┃ ┃ ┗ 📜index.ts
+ ┃ ┗ 📜App.tsx
+```
+</details>

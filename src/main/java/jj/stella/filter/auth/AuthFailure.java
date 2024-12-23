@@ -30,7 +30,7 @@ public class AuthFailure implements AuthenticationFailureHandler {
 	
 	@Override
 	public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response, AuthenticationException exception) throws IOException, ServletException {
-
+		
 		String username = request.getParameter("username");
 		WebAuthenticationDetails details = (WebAuthenticationDetails) request.getSession(false)
 				.getAttribute("St2lla-Authenticaion-Details");
