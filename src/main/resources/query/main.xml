@@ -27,12 +27,12 @@
 			AND device = #{device};
 	</select>
 	<!-- Refresh Token 저장 -->
-	<insert id="createRefreshToken" parameterType="jj.stella.entity.dto.RefreshTokenDto">
+	<insert id="regRefreshToken" parameterType="jj.stella.entity.dto.RefreshTokenDto">
 		INSERT INTO remember_me(id, device, token)
 		VALUES(#{id}, #{device}, #{token});
 	</insert>
 	<!-- Refresh Token 삭제 -->
-	<delete id="removeRefreshToken" parameterType="jj.stella.entity.dto.RefreshTokenDto">
+	<delete id="delRefreshToken" parameterType="jj.stella.entity.dto.RefreshTokenDto">
 		DELETE FROM remember_me
 		WHERE id = #{id}
 			AND device = #{device};

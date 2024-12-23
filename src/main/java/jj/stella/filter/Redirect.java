@@ -62,7 +62,7 @@ public class Redirect extends OncePerRequestFilter {
 	private String AUTH_SERVER;
 	private String HOME_SERVER;
 	private AuthDao authDao;
-	RedisTemplate<String, String> redisTemplate;
+	RedisTemplate<String, Object> redisTemplate;
 	private final AntPathMatcher pathMatcher = new AntPathMatcher();
 	public Redirect(
 		String JWT_HEADER, String JWT_KEY, String JWT_NAME,
@@ -70,7 +70,7 @@ public class Redirect extends OncePerRequestFilter {
 		String JWT_DOMAIN, String JWT_PATH, String JTI_SERVER,
 		Key JWT_ENCRYPT_SIGN, Key JWT_ENCRYPT_TOKEN, 
 		String AUTH_SERVER, String HOME_SERVER, AuthDao authDao,
-		RedisTemplate<String, String> redisTemplate
+		RedisTemplate<String, Object> redisTemplate
 	) {
 		this.JWT_HEADER = JWT_HEADER;
 		this.JWT_KEY = JWT_KEY;

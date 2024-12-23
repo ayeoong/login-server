@@ -79,7 +79,7 @@ public class SecurityConfig {
 	 * - 검증할 때 토큰과 Redis의 jti를 비교
 	 */
 	@Autowired
-	private RedisTemplate<String, String> redisTemplate;
+	private RedisTemplate<String, Object> redisTemplate;
 	
 	@Bean
 	protected SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -164,7 +164,7 @@ public class SecurityConfig {
 				JWT_REFRESH_ISSUER, JWT_REFRESH_AUDIENCE, JWT_DOMAIN, JWT_PATH, JWT_EXPIRED,
 				encryptSignKey(JWT_ENCRYPT_SIGN), encryptTokenKey(JWT_ENCRYPT_TOKEN),
 				encryptSignKey(JWT_ENCRYPT_REFRESH_SIGN), encryptTokenKey(JWT_ENCRYPT_REFRESH_TOKEN),
-				HOME_SERVER, authDao, redisTemplate
+				HOME_SERVER, authDao, authUtil, redisTemplate
 			), UsernamePasswordAuthenticationFilter.class)
 			.sessionManagement(session -> session 
 				.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)

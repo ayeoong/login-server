@@ -1,14 +1,10 @@
 package jj.stella.filter.auth;
 
 import java.io.IOException;
-import java.util.Arrays;
 
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.logout.LogoutSuccessHandler;
@@ -21,6 +17,9 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import jj.stella.entity.dto.RefreshTokenDto;
 import jj.stella.repository.dao.AuthDao;
+import jj.stella.util.cookie.CookieUtil;
+import jj.stella.util.jwt.TokenUtil;
+import jj.stella.util.redis.RedisUtil;
 
 public class AuthLogout implements LogoutSuccessHandler {
 
@@ -31,10 +30,10 @@ public class AuthLogout implements LogoutSuccessHandler {
 	private String JWT_PATH;
 	private String JTI_SERVER;
 	private AuthDao authDao;
-	RedisTemplate<String, String> redisTemplate;
+	RedisTemplate<String, Object> redisTemplate;
 	public AuthLogout(
 		String JWT_HEADER, String JWT_KEY, String JWT_NAME, String JWT_DOMAIN, String JWT_PATH,
-		String JTI_SERVER, AuthDao authDao, RedisTemplate<String, String> redisTemplate
+		String JTI_SERVER, AuthDao authDao, RedisTemplate<String, Object> redisTemplate
 	) {
 		this.JWT_HEADER = JWT_HEADER;
 		this.JWT_KEY = JWT_KEY;
@@ -53,137 +52,89 @@ public class AuthLogout implements LogoutSuccessHandler {
 	public void onLogoutSuccess(HttpServletRequest request, HttpServletResponse response, Authentication auth)
 		throws IOException, ServletException {
 		
-		// 쿠키삭제 + Remember Me 제거 + Redis 제거
-		invalidateAuth(request, response);
+		/** Redis 제거 + 쿠키삭제 + Remember Me 제거 */
+		resetAuth(request, response);
 		
-		// 세션 무효화
-		invalidateSession(request);
+		/** 세션 초기화 */
+		clearSession(request);
 		
-		// 인증 정보 클리어
+		/** 인증 정보 제거 */
 		SecurityContextHolder.clearContext();
 		response.sendRedirect("/");
 		
 	};
 	
 	/**
-	 * 쿠키삭제 + Remember Me 제거 + Redis 제거
-	 * 쿠키를 강제로 지운상태라면 어차피 n시간후에 TTL때문에 사라짐
-	 * 그리고 재발급하더라도 localStorage의 값이 같기때문에 상관없음.
-	 * 마음이 편하려고 추가한 로직임.
-	 * 쿠키가 없으면 Remember Me를 지울 수 없기 때문에 생성된 날짜 기준 프로시저로 삭제함.
+	 * 1. 쿠키가 존재할 경우
+	 * - Redis 제거 + 쿠키삭제 + Remember Me 제거
+	 * 
+	 * 2. 쿠키가 존재하지 않는경우
+	 * - Redis는 TTL때문에 어차피 n시간 후에 지워짐
+	 * - Remember Me는 Device라는 값을 가지고 DB에 저장되어 있는지 확인한 후
+	 * 존재한다면 해당 Device의 Remember Me를 제거함 
+	 *   > 같은 PC, 같은 환경에서 요청하는 경우에 해당 Device를 가지고 환경을 구분함
+	 *   > Device는 로그인 서버의 localStorage에 저장됨
+	 *   > 로그인 시도할 때 localStorage에 존재하는 Device값을 가져와서 활용하고, 아니라면 JS로 생성함
 	 */
-	private void invalidateAuth(HttpServletRequest request, HttpServletResponse response) {
+	private void resetAuth(HttpServletRequest request, HttpServletResponse response) {
 		
 		Cookie[] cookies = request.getCookies();
 		if(cookies != null) {
 			
-			/** Cookie에서 토큰 추출 */
-			String token = extractToken(request);
-			if(token != null)
-				clearAuth(response, token, cookies);
+			/**
+			 * Cookie에서 토큰 추출
+			 * Request Header에서 추출하지 않는 이유는
+			 * JS나 스크립트로 요청할 수 없게 설정했기 때문.
+			 */
+			String token = CookieUtil.extractValue(request, cookies, JWT_NAME);
+			if(token != null) {
+				
+				/** 쿠키 제거 */
+				CookieUtil.clearCookie(response, cookies, JWT_NAME, JWT_DOMAIN, JWT_PATH);
+				
+				/** Redis 제거 + Remember Me 제거 */
+				clearRedisAndRefreshToken(response, token, cookies);
+				
+			}
 			
 		}
 		
 	};
 	
-	/**
-	 * Cookie에서 토큰 추출
-	 * Request Header에서 추출하지 않는 이유는
-	 * JS나 스크립트로 요청할 수 없게 설정했기 때문.
-	 */
-	private String extractToken(HttpServletRequest request) {
+	/** Redis 제거 + Remember Me 제거 */
+	private void clearRedisAndRefreshToken(HttpServletResponse response, String token, Cookie[] cookies) {
 		
-//		String token = request.getHeader(JWT_HEADER);
-//		if(token != null && token.startsWith(JWT_KEY))
-//			return token.substring(JWT_KEY.length());
-		if(request.getCookies() != null) {
-			return Arrays.stream(request.getCookies())
-					.filter(cookie -> JWT_NAME.equals(cookie.getName()))
-					.findFirst()
-					.map(Cookie::getValue)
-					.orElse(null);
-		}
-		
-		return null;
-		
-	};
-	
-	/**
-	 * 쿠키삭제 + Remember Me 제거 + Redis 제거
-	 */
-	private void clearAuth(HttpServletResponse response, String token, Cookie[] cookies) {
-		
-		/** 쿠키 제거 */
-		clearCookie(response, cookies);
-		
+		/** Redis와 Remember Me 초기화를 위한 JTI 조회를 위한 설정 */
 		RestTemplate template = new RestTemplate();
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_JSON);
 		headers.set(JWT_HEADER, JWT_KEY + token);
 		
-		/** token에서 jti를 얻고, jti에서 ID와 사용자 기기 식별정보를 추출 */
-		RefreshTokenDto dto = extractTokenData(template, headers);
+		/**
+		 * Redis와 Remember Me 초기화를 위한 JTI 조회
+		 * - token에서 jti를 얻고, jti에서 ID와 사용자 기기 식별정보를 추출
+		 * - 존재한다면 Redis 제거 + Remember Me 제거
+		 *   > 제거하기 위한 데이터가 불러와졌으므로
+		 * */
+		RefreshTokenDto dto = TokenUtil.getJTI(template, headers, JTI_SERVER);
 		if(dto != null) {
+			
 			/** Redis 제거 */
-			clearRedis(dto.getId() + "::" + dto.getDevice());
+			RedisUtil.revoke(redisTemplate, dto.getId() + "::" + dto.getDevice());
+			
 			/** Remember Me - Refresh Token 제거 */
-			clearRefreshToken(dto);
+			if(authDao.getRefreshToken(dto) >= 1)
+				authDao.delRefreshToken(dto);
+			
 		}
 		
 	};
 	
-	/** token에서 jti를 얻고, jti에서 ID와 사용자 기기 식별정보를 추출 */
-	private RefreshTokenDto extractTokenData(RestTemplate template, HttpHeaders headers) {
-		
-		RefreshTokenDto dto = new RefreshTokenDto();
-		HttpEntity<String> entity = new HttpEntity<>("", headers);
-		ResponseEntity<String> res = template.exchange(JTI_SERVER, HttpMethod.GET, entity, String.class);
-		
-		String[] split = res.getBody().split("::");
-		if(split.length < 2)
-			return null;
-		
-		dto.setId(split[0]);
-		dto.setDevice(split[1]);
-		
-		return dto;
-		
-	};
-	
-	/** Redis 제거 */
-	private void clearRedis(String key) {
-		redisTemplate.delete(key);
-	};
-	
-	/** Remember Me - Refresh Token 제거 */
-	private void clearRefreshToken(RefreshTokenDto dto) {
-		if(authDao.getRefreshToken(dto) >= 1)
-			authDao.delRefreshToken(dto);
-	};
-	
-	/** 쿠키 제거 */
-	private void clearCookie(HttpServletResponse response, Cookie[] cookies) {
-		Arrays.stream(cookies)
-			.filter(cookie -> JWT_NAME.equals(cookie.getName()))
-			.forEach(cookie -> {
-				
-				cookie.setDomain(JWT_DOMAIN);
-				cookie.setValue("");
-				cookie.setMaxAge(0);
-				cookie.setPath(JWT_PATH);
-				
-				response.addCookie(cookie);
-				
-			});
-	};
-	
 	/** 세션 초기화 */
-	private void invalidateSession(HttpServletRequest request) {
-		
+	private void clearSession(HttpServletRequest request) {
 		HttpSession session = request.getSession(false);
 		if(session != null)
 			session.invalidate();
-		
 	};
 	
 }
