@@ -158,11 +158,11 @@ const Main = () => {
 							</div>}
 							<form onSubmit={onLogin}>
 								<div className={`login-input`}>
-									<InputID data={``} holder={`ID`}
+									<InputID data={`st2lla-test`} holder={`ID`}
 										focus={true} onChange={onId} />
 								</div>
 								<div className={`login-input`}>
-									<InputPassword data={``} holder={`Password`}
+									<InputPassword data={`test!Q3w`} holder={`Password`}
 										onChange={onPassword} onCapsLock={onCapsLock} />
 								</div>
 								<p ref={ref} className={`capslock`}><strong>{`CapsLock`}</strong>{`이 켜져있습니다.`}</p>

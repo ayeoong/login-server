@@ -37,6 +37,7 @@ public class AuthUtil {
 		
 	};
 	
+	/** 사용자 검증( ID + Password / 토큰검증 아님 ) */
 	public UserVo validateUser(String id, String password, Object object) {
 		
 		String username = encryptName(id);
@@ -56,6 +57,7 @@ public class AuthUtil {
 		return user;
 		
 	};
+	
 	/** Remember Me - Refresh Token 제거 */
 	private void clearRefreshToken(String id, AuthDetails details) {
 		

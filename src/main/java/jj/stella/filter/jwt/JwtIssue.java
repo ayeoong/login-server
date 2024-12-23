@@ -2,41 +2,31 @@ package jj.stella.filter.jwt;
 
 import java.io.IOException;
 import java.security.Key;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nimbusds.jose.EncryptionMethod;
 import com.nimbusds.jose.JOSEException;
-import com.nimbusds.jose.JWEAlgorithm;
-import com.nimbusds.jose.JWEHeader;
-import com.nimbusds.jose.JWEObject;
-import com.nimbusds.jose.JWSAlgorithm;
-import com.nimbusds.jose.JWSHeader;
-import com.nimbusds.jose.Payload;
-import com.nimbusds.jose.crypto.DirectEncrypter;
-import com.nimbusds.jose.crypto.MACSigner;
-import com.nimbusds.jwt.JWTClaimsSet;
-import com.nimbusds.jwt.SignedJWT;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jj.stella.entity.dto.RefreshTokenDto;
 import jj.stella.entity.dto.ResultDto;
 import jj.stella.filter.auth.AuthDetails;
 import jj.stella.repository.dao.AuthDao;
+import jj.stella.util.auth.AuthUtil;
+import jj.stella.util.cookie.CookieUtil;
+import jj.stella.util.jwt.TokenUtil;
+import jj.stella.util.redis.RedisUtil;
 
 public class JwtIssue extends OncePerRequestFilter {
 	
@@ -54,13 +44,14 @@ public class JwtIssue extends OncePerRequestFilter {
 	private Key JWT_ENCRYPT_REFRESH_TOKEN;
 	private String HOME_SERVER;
 	private AuthDao authDao;
-	private RedisTemplate<String, String> redisTemplate;
+	private AuthUtil authUtil;
+	private RedisTemplate<String, Object> redisTemplate;
 	public JwtIssue(
 		String JWT_NAME, String JWT_ISSUER, String JWT_AUDIENCE,
 		String JWT_REFRESH_ISSUER, String JWT_REFRESH_AUDIENCE, String JWT_DOMAIN, String JWT_PATH, String JWT_EXPIRED,
 		Key JWT_ENCRYPT_SIGN, Key JWT_ENCRYPT_TOKEN,
 		Key JWT_ENCRYPT_REFRESH_SIGN, Key JWT_ENCRYPT_REFRESH_TOKEN, 
-		String HOME_SERVER, AuthDao authDao, RedisTemplate<String, String> redisTemplate
+		String HOME_SERVER, AuthDao authDao, AuthUtil authUtil, RedisTemplate<String, Object> redisTemplate
 	) {
 		this.JWT_NAME = JWT_NAME;
 		this.JWT_ISSUER = JWT_ISSUER;
@@ -76,6 +67,7 @@ public class JwtIssue extends OncePerRequestFilter {
 		this.JWT_ENCRYPT_REFRESH_TOKEN = JWT_ENCRYPT_REFRESH_TOKEN;
 		this.HOME_SERVER = HOME_SERVER;
 		this.authDao = authDao;
+		this.authUtil = authUtil;
 		this.redisTemplate = redisTemplate;
 	};
 	
@@ -84,21 +76,23 @@ public class JwtIssue extends OncePerRequestFilter {
 		throws IOException, ServletException {
 		
 		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+		/** 로그인이 성공했을 때 로직 실행 */
 		if(auth != null && auth.isAuthenticated()) {
 			
-			String id = auth.getName();
+			String username = auth.getName();
 			AuthDetails details = (AuthDetails) auth.getDetails();
-			String ip = ((AuthDetails) details).getIp();
 			
-			/** 로그인 성공 시 인증토큰 발급 + 세팅 ( 암호화된 JWT = JWE / Cookie And Redis 세팅 ) */
-			issueAuthTokenAndSet(response, id, details);
+			/** 로그인 성공 = 인증토큰 발급 + 세팅( JWE = 암호화된 JWT, Redis & Cookie에 저장 ) */
+			issueAuthTokenAndSet(response, username, details);
 			
-			/** 로그인 성공 + 사용자가 자동로그인을 설정한 경우 Refresh Token 발급 + 세팅 ( 암호화된 JWT + JWE / DB ) */
+			/** 로그인 성공 = 사용자가 자동로그인을 설정한 경우 Refresh Token 발급 + 세팅( JWE = 암호화된 JWT, DB에 저장 ) */
 			if(details.isRememberMe())
-				issueRefreshTokenAndSet(id, details);
+				issueRefreshTokenAndSet(username, details);
 
 			/** 로그인 결과 저장 - 성공 */
-			authDao.regLoginResult(new ResultDto("success", id, ip));
+			authDao.regLoginResult(new ResultDto(
+				"success", authUtil.encryptName(username), ((AuthDetails) details).getIp()
+			));
 			
 			/**
 			 * 어디로 Redirect 할 것인지 설정
@@ -116,17 +110,29 @@ public class JwtIssue extends OncePerRequestFilter {
 		
 	};
 	
-	/** 인증토큰 발급 + 세팅 ( 암호화된 JWT = JWE / Cookie And Redis 세팅 ) */
+	/** 인증토큰 발급 + 세팅( JWE = 암호화된 JWT, Redis & Cookie에 저장 ) */
 	private void issueAuthTokenAndSet(HttpServletResponse response, String id, AuthDetails details) {
 		try {
 			
-			/** 인증토큰 발급 ( 암호화된 JWT = JWE ) */
-			/** 마지막 false로 Refresh Token인지 여부 판단 */
-			/** 인증토큰의 경우 발급하자마자 jti( id::사용자 기기 식별번호 )를 활용해 Redis에 저장함. */
-			String token = issueAndEncryptToken(id, details, false);
+			/** 인증토큰 발급( JWE = 암호화된 JWT ) */
+			String JWE_TOKEN = TokenUtil.issueToken(
+				id, details,
+				JWT_ENCRYPT_SIGN, JWT_ENCRYPT_TOKEN,
+				JWT_ISSUER, JWT_AUDIENCE, JWT_EXPIRED
+			);
 			
-			/** Cookie 세팅 */
-			setCookie(token, response);
+			/** 인증토큰의 경우 발급하자마자 jti( id::사용자 기기 식별번호 )를 활용해 Redis에 저장함. */
+			String jti = id + "::" + details.getDevice();
+			RedisUtil.save(redisTemplate, jti, "true", JWT_EXPIRED, TimeUnit.MILLISECONDS);
+			
+			/**
+			 * 만들어진 JWE 토큰을 Cookie에 세팅
+			 * - 쿠키의 유효기간은 반년으로 설정하고
+			 * 1. 검증요청( 검증서버로 /validate 요청 ) 혹은
+			 * 2. 인증 재발급 요청( 검증서버에서 로그인서버로 /refresh 요청 )
+			 * 이 성공하는 경우 요청을 보낸 서버에서 쿠키의 생명을 연장함
+			 * */
+			CookieUtil.setCookie(JWT_NAME, JWE_TOKEN, JWT_DOMAIN, JWT_PATH, (int) (((JWT_EXPIRED * 8 * 365) / 2) / 1000), response);
 			
 		} catch (JOSEException e) {
 			SecurityContextHolder.clearContext();
@@ -134,7 +140,7 @@ public class JwtIssue extends OncePerRequestFilter {
 		}
 	};
 	
-	/** Refresh Token 발급 + 세팅 ( 암호화된 JWT = JWE / DB ) */
+	/** Refresh Token 발급 + 세팅( JWE = 암호화된 JWT, DB에 저장 ) */
 	private void issueRefreshTokenAndSet(String id, AuthDetails details) {
 		try {
 			
@@ -142,9 +148,11 @@ public class JwtIssue extends OncePerRequestFilter {
 			dto.setId(id);
 			dto.setDevice(details.getDevice());
 			
-			/** Refresh Token 발급 ( 암호화된 JWT = JWE ) */
-			/** 마지막 true로 Refresh Token인지 여부 판단 */
-			dto.setToken(issueAndEncryptToken(id, details, true));
+			/** Refresh Token 발급( JWE = 암호화된 JWT ) */
+			dto.setToken(TokenUtil.issueToken(id, details,
+				JWT_ENCRYPT_REFRESH_SIGN, JWT_ENCRYPT_REFRESH_TOKEN,
+				JWT_REFRESH_ISSUER, JWT_REFRESH_AUDIENCE, JWT_EXPIRED * 8 * 365
+			));
 			
 			/** Refresh Token DB저장 */
 			authDao.regRefreshToken(dto);
@@ -153,102 +161,6 @@ public class JwtIssue extends OncePerRequestFilter {
 			SecurityContextHolder.clearContext();
 			throw new RuntimeException("JWT Issue and Encryption Error: ", e);
 		}
-	};
-	
-	/** Token 발급 로직 실행 */
-	private String issueAndEncryptToken(String id, AuthDetails details, boolean isRefresh) throws JOSEException {
-		
-		/**
-		 * JWT 토큰 발급
-		 * Redis 저장 ( 인증토큰의 경우 - Remember Me( Refresh Token )이 아닌 경우 )
-		 */
-		JWTClaimsSet jwt = issueJwt(id, details, isRefresh);
-		
-		/** JWT 서명 */
-		SignedJWT token = signJwt(jwt, !isRefresh? JWT_ENCRYPT_SIGN:JWT_ENCRYPT_REFRESH_SIGN);
-		
-		/** JWT 암호화 = JWE */
-		JWEObject jwe = encryptJwt(token, !isRefresh? JWT_ENCRYPT_TOKEN:JWT_ENCRYPT_REFRESH_TOKEN);
-		
-		return jwe.serialize();
-		
-	};
-	
-	/** JWT 토큰 발급 */
-	private JWTClaimsSet issueJwt(String id, AuthDetails details, boolean isRefresh) {
-		
-		Date now = new Date();
-		
-		String jti = id + "::" + details.getDevice();
-		long expired = !isRefresh? JWT_EXPIRED:(JWT_EXPIRED * 8 * 365);
-		String issuer = !isRefresh? JWT_ISSUER:JWT_REFRESH_ISSUER;
-		String audience = !isRefresh? JWT_AUDIENCE:JWT_REFRESH_AUDIENCE;
-		
-		/** 인증토큰의 경우 jti로 Redis에 저장 ( 존재유무만 판단하면 됨 ) */
-		if(!isRefresh)
-			storeJTIInRedis(jti, JWT_EXPIRED);
-		
-		return new JWTClaimsSet.Builder()
-				.issuer(issuer)
-				.subject(id)
-				.audience(audience)
-				.jwtID(jti)
-				.expirationTime(new Date(now.getTime() + expired))
-				.claim("ip", details.getIp())
-				.claim("agent", details.getAgent())
-				.claim("device", details.getDevice())
-				.build();
-		
-	};
-	
-	/** 인증토큰의 경우 jti로 Redis에 저장 ( 존재유무만 판단하면 되기 때문에 값은 "true"로 통일 ) */
-	private void storeJTIInRedis(String jti, long expired) {
-		ValueOperations<String, String> ops = redisTemplate.opsForValue();
-		ops.set(jti, "true", expired, TimeUnit.MILLISECONDS);
-	};
-	
-	/** JWT 서명 */
-	private SignedJWT signJwt(JWTClaimsSet jwt, Key key) throws JOSEException {
-		
-		SignedJWT signedJwt = new SignedJWT(new JWSHeader(JWSAlgorithm.HS256), jwt);
-		signedJwt.sign(new MACSigner(key.getEncoded()));
-		
-		return signedJwt;
-		
-	};
-	
-	/** JWT 암호화 = JWE */
-	private JWEObject encryptJwt(SignedJWT token, Key key) throws JOSEException {
-		
-		JWEObject jweObject = new JWEObject(
-			new JWEHeader.Builder(JWEAlgorithm.DIR, EncryptionMethod.A256GCM).contentType("JWT").build(),
-			new Payload(token)
-		);
-		
-		jweObject.encrypt(new DirectEncrypter(key.getEncoded()));
-		return jweObject;
-		
-	};
-	
-	/** JWE Cookie 세팅 */
-	private void setCookie(String token, HttpServletResponse response) {
-		
-		Cookie cookie = new Cookie(JWT_NAME, token);
-		
-		/**
-		 * 쿠키의 유효기간은 반년으로 설정하고
-		 * "검증서버의 '/validate'"가 성공하거나
-		 * "검증서버에서 로그인서버로의 재발급요청 '/refresh'"이 성공하면
-		 * "검증서버에서" 쿠키의 생명을 연장.
-		 * */
-		cookie.setDomain(JWT_DOMAIN);
-		cookie.setMaxAge((int) (((JWT_EXPIRED * 8 * 365) / 2) / 1000));
-		cookie.setHttpOnly(true);
-		cookie.setSecure(true);
-		cookie.setPath(JWT_PATH);
-		
-		response.addCookie(cookie);
-		
 	};
 	
 	/**
