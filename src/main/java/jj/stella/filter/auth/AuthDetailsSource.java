@@ -22,7 +22,12 @@ public class AuthDetailsSource extends WebAuthenticationDetailsSource {
 	
 	@Override
 	public WebAuthenticationDetails buildDetails(HttpServletRequest request) {
-		return new AuthDetails(request, ORIGIN_IP_API);
+		
+		AuthDetails details = new AuthDetails(request, ORIGIN_IP_API);
+		request.getSession().setAttribute("St2lla-Authenticaion-Details", details);
+		
+		return details;
+		
 	};
 	
 }

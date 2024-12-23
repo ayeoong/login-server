@@ -34,13 +34,9 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jj.stella.entity.dto.RefreshTokenDto;
-import jj.stella.entity.dto.UserDto;
-import jj.stella.entity.vo.UserVo;
+import jj.stella.entity.dto.ResultDto;
 import jj.stella.filter.auth.AuthDetails;
-import jj.stella.repository.dao.CommonDao;
-import jj.stella.repository.service.RedisService;
-import jj.stella.util.RedisLog;
-import jj.stella.util.SHA256;
+import jj.stella.repository.dao.AuthDao;
 
 public class JwtIssue extends OncePerRequestFilter {
 	
@@ -57,15 +53,14 @@ public class JwtIssue extends OncePerRequestFilter {
 	private Key JWT_ENCRYPT_REFRESH_SIGN;
 	private Key JWT_ENCRYPT_REFRESH_TOKEN;
 	private String HOME_SERVER;
-	private CommonDao commonDao;
-	private RedisService redisService;
+	private AuthDao authDao;
 	private RedisTemplate<String, String> redisTemplate;
 	public JwtIssue(
 		String JWT_NAME, String JWT_ISSUER, String JWT_AUDIENCE,
 		String JWT_REFRESH_ISSUER, String JWT_REFRESH_AUDIENCE, String JWT_DOMAIN, String JWT_PATH, String JWT_EXPIRED,
 		Key JWT_ENCRYPT_SIGN, Key JWT_ENCRYPT_TOKEN,
 		Key JWT_ENCRYPT_REFRESH_SIGN, Key JWT_ENCRYPT_REFRESH_TOKEN, 
-		String HOME_SERVER, CommonDao commonDao, RedisService redisService, RedisTemplate<String, String> redisTemplate
+		String HOME_SERVER, AuthDao authDao, RedisTemplate<String, String> redisTemplate
 	) {
 		this.JWT_NAME = JWT_NAME;
 		this.JWT_ISSUER = JWT_ISSUER;
@@ -80,8 +75,7 @@ public class JwtIssue extends OncePerRequestFilter {
 		this.JWT_ENCRYPT_REFRESH_SIGN = JWT_ENCRYPT_REFRESH_SIGN;
 		this.JWT_ENCRYPT_REFRESH_TOKEN = JWT_ENCRYPT_REFRESH_TOKEN;
 		this.HOME_SERVER = HOME_SERVER;
-		this.commonDao = commonDao;
-		this.redisService = redisService;
+		this.authDao = authDao;
 		this.redisTemplate = redisTemplate;
 	};
 	
@@ -94,22 +88,17 @@ public class JwtIssue extends OncePerRequestFilter {
 			
 			String id = auth.getName();
 			AuthDetails details = (AuthDetails) auth.getDetails();
+			String ip = ((AuthDetails) details).getIp();
 			
 			/** 로그인 성공 시 인증토큰 발급 + 세팅 ( 암호화된 JWT = JWE / Cookie And Redis 세팅 ) */
 			issueAuthTokenAndSet(response, id, details);
+			
 			/** 로그인 성공 + 사용자가 자동로그인을 설정한 경우 Refresh Token 발급 + 세팅 ( 암호화된 JWT + JWE / DB ) */
 			if(details.isRememberMe())
 				issueRefreshTokenAndSet(id, details);
-			
-			/** 로그인 성공 로그 */
-			/** Redis 로그를 위한 조회 */
-			UserVo user = getUser(encryptName(id));
-			try {
-				redisService.setLog(RedisLog.loginSuccess(user.getIdx(), id, details));
-			}
-			
-			/** Redis PrintStackTrace */
-			catch(Exception e) { e.printStackTrace(); }
+
+			/** 로그인 결과 저장 - 성공 */
+			authDao.regLoginResult(new ResultDto("success", id, ip));
 			
 			/**
 			 * 어디로 Redirect 할 것인지 설정
@@ -158,7 +147,7 @@ public class JwtIssue extends OncePerRequestFilter {
 			dto.setToken(issueAndEncryptToken(id, details, true));
 			
 			/** Refresh Token DB저장 */
-			commonDao.createRefreshToken(dto);
+			authDao.regRefreshToken(dto);
 			
 		} catch (JOSEException e) {
 			SecurityContextHolder.clearContext();
@@ -285,22 +274,6 @@ public class JwtIssue extends OncePerRequestFilter {
 		String result = mapper.writeValueAsString(map);
 		response.getWriter().write(result);
 		response.getWriter().flush();
-		
-	};
-	
-	/** ID 암호화 */
-	private String encryptName(String id) {
-		SHA256 sha = new SHA256();
-		return sha.getSHA256Type(id);
-	};
-	
-	/** 유저 존재 여부 */
-	private UserVo getUser(String username) {
-		
-		UserDto dto = new UserDto();
-		dto.setUsername(username);
-		
-		return commonDao.getUser(dto);
 		
 	};
 	

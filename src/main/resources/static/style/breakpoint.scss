@@ -1,0 +1,110 @@
+$fhd: 1600px;
+$hd: 1440px;
+$pc: 1200px;
+$note: 1024px;
+$wide: 968px;
+$tab: 850px;
+$tablet: 768px;
+$suf: 576px;
+$mobile: 480px;
+$min: 320px;
+
+$breakpoints: (
+	fhd: $fhd,
+	hd: $hd,
+	pc: $pc,
+	note: $note,
+	wide: $wide,
+	tab: $tab,
+	tablet: $tablet,
+	suf: $suf,
+	mobile: $mobile,
+	min: $min
+);
+
+@mixin resp-max($width) {
+	
+	@if $width == fhd {
+		@media only screen and (max-width: $fhd) { @content; }
+	}
+
+	@else if $width == hd {
+		@media only screen and (max-width: $hd) { @content; }
+	}
+
+	@else if $width == pc {
+		@media only screen and (max-width: $pc) { @content; }
+	}
+
+	@else if $width == note {
+		@media only screen and (max-width: $note) { @content; }
+	}
+
+	@else if $width == wide {
+		@media only screen and (max-width: $wide) { @content; }
+	}
+
+	@else if $width == tab {
+		@media only screen and (max-width: $tab) { @content; }
+	}
+
+	@else if $width == tablet {
+		@media only screen and (max-width: $tablet) { @content; }
+	}
+
+	@else if $width == suf {
+		@media only screen and (max-width: $suf) { @content; }
+	}
+
+	@else if $width == mobile {
+		@media only screen and (max-width: $mobile) { @content; }
+	}
+
+	@else if $width == min {
+		@media only screen and (max-width: $min) { @content; }
+	}
+
+}
+@mixin resp-min($width) {
+	
+	@if $width == fhd {
+		@media only screen and (min-width: $fhd) { @content; }
+	}
+
+	@else if $width == hd {
+		@media only screen and (min-width: $hd) { @content; }
+	}
+
+	@else if $width == pc {
+		@media only screen and (min-width: $pc) { @content; }
+	}
+
+	@else if $width == note {
+		@media only screen and (min-width: $note) { @content; }
+	}
+
+	@else if $width == wide {
+		@media only screen and (min-width: $wide) { @content; }
+	}
+
+	@else if $width == tab {
+		@media only screen and (min-width: $tab) { @content; }
+	}
+
+	@else if $width == tablet {
+		@media only screen and (min-width: $tablet) { @content; }
+	}
+
+	@else if $width == suf {
+		@media only screen and (min-width: $suf) { @content; }
+	}
+
+	@else if $width == mobile {
+		@media only screen and (min-width: $mobile) { @content; }
+	}
+
+	@else if $width == min {
+		@media only screen and (min-width: $min) { @content; }
+	}
+
+}

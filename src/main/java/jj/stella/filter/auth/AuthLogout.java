@@ -20,7 +20,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import jj.stella.entity.dto.RefreshTokenDto;
-import jj.stella.repository.dao.CommonDao;
+import jj.stella.repository.dao.AuthDao;
 
 public class AuthLogout implements LogoutSuccessHandler {
 
@@ -30,11 +30,11 @@ public class AuthLogout implements LogoutSuccessHandler {
 	private String JWT_DOMAIN;
 	private String JWT_PATH;
 	private String JTI_SERVER;
-	private CommonDao commonDao;
+	private AuthDao authDao;
 	RedisTemplate<String, String> redisTemplate;
 	public AuthLogout(
 		String JWT_HEADER, String JWT_KEY, String JWT_NAME, String JWT_DOMAIN, String JWT_PATH,
-		String JTI_SERVER, CommonDao commonDao, RedisTemplate<String, String> redisTemplate
+		String JTI_SERVER, AuthDao authDao, RedisTemplate<String, String> redisTemplate
 	) {
 		this.JWT_HEADER = JWT_HEADER;
 		this.JWT_KEY = JWT_KEY;
@@ -42,7 +42,7 @@ public class AuthLogout implements LogoutSuccessHandler {
 		this.JWT_DOMAIN = JWT_DOMAIN;
 		this.JWT_PATH = JWT_PATH;
 		this.JTI_SERVER = JTI_SERVER;
-		this.commonDao = commonDao;
+		this.authDao = authDao;
 		this.redisTemplate = redisTemplate;
 	};
 	
@@ -157,8 +157,8 @@ public class AuthLogout implements LogoutSuccessHandler {
 	
 	/** Remember Me - Refresh Token 제거 */
 	private void clearRefreshToken(RefreshTokenDto dto) {
-		if(commonDao.getRefreshToken(dto) >= 1)
-			commonDao.removeRefreshToken(dto);
+		if(authDao.getRefreshToken(dto) >= 1)
+			authDao.delRefreshToken(dto);
 	};
 	
 	/** 쿠키 제거 */

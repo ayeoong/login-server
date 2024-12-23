@@ -1,4 +1,4 @@
-package jj.stella.util;
+package jj.stella.util.cookie;
 
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -23,8 +23,8 @@ import org.apache.tomcat.util.res.StringManager;
 
 import jakarta.servlet.http.HttpServletRequest;
 
-public class CookieUtil extends CookieProcessorBase {
-
+public class CookieProcessor extends CookieProcessorBase {
+	
 	private static final Log log = LogFactory.getLog(Rfc6265CookieProcessor.class);
 	private static final StringManager sm =
 		StringManager.getManager(Rfc6265CookieProcessor.class.getPackage().getName());
@@ -236,7 +236,7 @@ public class CookieUtil extends CookieProcessorBase {
 			if(firstSegment && i == 0 && cur == '.') {
 				// 첫 번째 문자가 점일 경우에는 예외로 처리하고 다음 문자로 넘어감
 				i++;
-	            continue;
+				continue;
 			}
 			
 			// labels must start with a letter or number
