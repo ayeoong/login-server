@@ -2,8 +2,6 @@ package jj.stella.filter;
 
 import java.io.IOException;
 import java.security.Key;
-import java.util.Arrays;
-import java.util.Date;
 
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpEntity;
@@ -12,24 +10,12 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.util.AntPathMatcher;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import com.nimbusds.jose.EncryptionMethod;
 import com.nimbusds.jose.JOSEException;
-import com.nimbusds.jose.JWEAlgorithm;
-import com.nimbusds.jose.JWEHeader;
-import com.nimbusds.jose.JWEObject;
-import com.nimbusds.jose.JWSAlgorithm;
-import com.nimbusds.jose.JWSHeader;
-import com.nimbusds.jose.Payload;
-import com.nimbusds.jose.crypto.DirectEncrypter;
-import com.nimbusds.jose.crypto.MACSigner;
-import com.nimbusds.jwt.JWTClaimsSet;
-import com.nimbusds.jwt.SignedJWT;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -39,7 +25,13 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import jj.stella.entity.dto.RefreshTokenDto;
 import jj.stella.entity.dto.ReissueDto;
+import jj.stella.entity.dto.ResultDto;
 import jj.stella.repository.dao.AuthDao;
+import jj.stella.util.auth.AuthUtil;
+import jj.stella.util.cookie.CookieUtil;
+import jj.stella.util.jwt.RedirectUtil;
+import jj.stella.util.jwt.TokenUtil;
+import jj.stella.util.redis.RedisUtil;
 
 public class Redirect extends OncePerRequestFilter {
 	
@@ -62,15 +54,15 @@ public class Redirect extends OncePerRequestFilter {
 	private String AUTH_SERVER;
 	private String HOME_SERVER;
 	private AuthDao authDao;
+	private AuthUtil authUtil;
 	RedisTemplate<String, Object> redisTemplate;
-	private final AntPathMatcher pathMatcher = new AntPathMatcher();
 	public Redirect(
 		String JWT_HEADER, String JWT_KEY, String JWT_NAME,
 		String JWT_ISSUER, String JWT_AUDIENCE, String JWT_EXPIRED,
 		String JWT_DOMAIN, String JWT_PATH, String JTI_SERVER,
 		Key JWT_ENCRYPT_SIGN, Key JWT_ENCRYPT_TOKEN, 
 		String AUTH_SERVER, String HOME_SERVER, AuthDao authDao,
-		RedisTemplate<String, Object> redisTemplate
+		AuthUtil authUtil, RedisTemplate<String, Object> redisTemplate
 	) {
 		this.JWT_HEADER = JWT_HEADER;
 		this.JWT_KEY = JWT_KEY;
@@ -86,6 +78,7 @@ public class Redirect extends OncePerRequestFilter {
 		this.AUTH_SERVER = AUTH_SERVER;
 		this.HOME_SERVER = HOME_SERVER;
 		this.authDao = authDao;
+		this.authUtil = authUtil;
 		this.redisTemplate = redisTemplate;
 	}
 	
@@ -107,7 +100,7 @@ public class Redirect extends OncePerRequestFilter {
 		 * 해당로직을 위해 리소스 경로는 Spring Security 로직 진행
 		 */
 		String path = request.getRequestURI();
-		if(isSkipPath(path)) {
+		if(RedirectUtil.validateSkipPath(path)) {
 			chain.doFilter(request, response);
 			return;
 		}
@@ -116,7 +109,7 @@ public class Redirect extends OncePerRequestFilter {
 		 * 검증서버에서 "/refresh" 경로로 인증토큰 재발급 요청이 들어온 경우
 		 * 인터넷 주소창이 /refresh 그냥 입력하는 경우는 걸러냄.
 		 */
-		if(isRefreshPath(request, path)) {
+		if(RedirectUtil.validateRefreshPath(request, path)) {
 			/**
 			 * 조건에 맞다면 재발급 로직 실행
 			 * 재발급 후 Cookie 갱신, 저장 / Redis 저장을 하지 않는 이유는
@@ -125,39 +118,32 @@ public class Redirect extends OncePerRequestFilter {
 			 * 애시당초 여기서 Redis는 저장이 되도, 검증서버에서 RestTemplate으로 요청이 왔기 때문에
 			 * response로 쿠키를 설정할 수가 없음. ( response로 반환해야 함. )
 			 * */
-			conditionalReissueAuthToken(request, response);
+			reissueAuthToken(request, response);
 			return;
 		}
 		
-		activateRedirect(request, response, chain);
+		redirect(request, response, chain);
 		
-	};
-	
-	/** 요청이 들어왔을 때 Redirect를 건너뛰는 경로 - 리소스 */
-	private boolean isSkipPath(String path) {
-		return pathMatcher.match("/resources/**", path)
-			|| pathMatcher.match("/favicon.ico", path)
-			|| pathMatcher.match("/api/mail/code", path);
-	};
-	
-	/** 요청이 들어왔을 때 Redirect를 건너뛰는 경로 - 검증서버에서 요청받은 재발급 경로 */
-	private boolean isRefreshPath(HttpServletRequest request, String path) {
-		return pathMatcher.match("/refresh", path) && (
-			request.getHeader("REISSUE-ID") != null
-			&& request.getHeader("REISSUE-IP") != null
-			&& request.getHeader("REISSUE-AGENT") != null
-			&& request.getHeader("REISSUE-DEVICE") != null
-		);
 	};
 	
 	/**
 	 * 요청서버에서 직접 설정한 REISSUE-* 헤더 n개가 모두 존재하는 경우
 	 * 인증토큰 재발급 후 검증서버로 반환
 	 * */
-	private void conditionalReissueAuthToken(HttpServletRequest request, HttpServletResponse response) throws IOException {
+	private void reissueAuthToken(HttpServletRequest request, HttpServletResponse response) throws IOException {
 		
 		/** 재발급에 필요한 정보를 요청 Header에서 추출 */
-		ReissueDto dto = extractAuth(request);
+		/**
+		 * 요청 Header에서 값을 뽑아낸 후 Dto로 변환해서 Return
+		 * 요청 Header에 값이 없는 경우는 isRefreshPath에서 사전에 걸러내기 때문에
+		 * 해당 경우는 존재할 수 없음.
+		 * */
+		ReissueDto dto = new ReissueDto();
+		dto.setId(request.getHeader("REISSUE-ID"));
+		dto.setIp(request.getHeader("REISSUE-IP"));
+		dto.setAgent(request.getHeader("REISSUE-AGENT"));
+		dto.setDevice(request.getHeader("REISSUE-DEVICE"));
+		
 		response.setStatus(HttpServletResponse.SC_OK);
 		response.setContentType(MediaType.TEXT_PLAIN_VALUE);
 		response.setCharacterEncoding("UTF-8");
@@ -166,31 +152,18 @@ public class Redirect extends OncePerRequestFilter {
 		
 	};
 	
-	/**
-	 * 요청 Header에서 값을 뽑아낸 후 Dto로 변환해서 Return
-	 * 요청 Header에 값이 없는 경우는 isRefreshPath에서 사전에 걸러내기 때문에
-	 * 해당 경우는 존재할 수 없음.
-	 * */
-	private ReissueDto extractAuth(HttpServletRequest request) {
-		
-		ReissueDto dto = new ReissueDto();
-		dto.setId(request.getHeader("REISSUE-ID"));
-		dto.setIp(request.getHeader("REISSUE-IP"));
-		dto.setAgent(request.getHeader("REISSUE-AGENT"));
-		dto.setDevice(request.getHeader("REISSUE-DEVICE"));
-		
-		return dto;
-		
-	};
-	
 	/** 발급 중 오류가 발생한다면 INVALID를 검증서버에 반환함으로써 예외처리 */
 	private String reissueAuthToken(ReissueDto dto) {
 		try {
 			
-			String token = reissueAndEncryptToken(dto);
+			String token = TokenUtil.reissueJWE(dto,
+					JWT_ENCRYPT_SIGN, JWT_ENCRYPT_TOKEN,
+					JWT_ISSUER, JWT_AUDIENCE, JWT_EXPIRED);
 			
+			/** 로그인 결과 저장 - 갱신( 사용자의 마지막 접속일을 갱신함 ) */
+			authDao.regLoginResult(new ResultDto("reissue", authUtil.encryptName(dto.getId()), dto.getIp()));
 			/** 사용자의 마지막 접속일을 갱신 */
-			updateLastLoginDate(dto.getId());
+//			authDao.uptLoginDate(id);
 			
 			return token;
 			
@@ -198,84 +171,15 @@ public class Redirect extends OncePerRequestFilter {
 			return "INVALID";
 		}
 	};
-
-	/** Token 발급 로직 실행 */
-	private String reissueAndEncryptToken(ReissueDto dto) throws JOSEException {
-		
-		/** JWT 토큰 발급 */
-		JWTClaimsSet jwt = issueJwt(dto);
-		
-		/** JWT 서명 */
-		SignedJWT token = signJwt(jwt);
-		
-		/** JWT 암호화 = JWE */
-		JWEObject jwe = encryptJwt(token);
-		
-		return jwe.serialize();
-		
-	};
-
-	/** JWT 토큰 발급 */
-	private JWTClaimsSet issueJwt(ReissueDto dto) {
-		
-		Date now = new Date();
-		
-		/** jti는 "로그인한 사용자의 ID::사용자 기기 식별번호"로 설정 */
-		String jti = dto.getId() + "::" + dto.getDevice();
-		return new JWTClaimsSet.Builder()
-				.issuer(JWT_ISSUER)
-				.subject(dto.getId())
-				.audience(JWT_AUDIENCE)
-				.jwtID(jti)
-				.expirationTime(new Date(now.getTime() + JWT_EXPIRED))
-				.claim("ip", dto.getIp())
-				.claim("agent", dto.getAgent())
-				.claim("device", dto.getDevice())
-				.build();
-		
-	};
-	
-	/** JWT 서명 */
-	private SignedJWT signJwt(JWTClaimsSet jwt) throws JOSEException {
-		
-		SignedJWT signedJwt = new SignedJWT(new JWSHeader(JWSAlgorithm.HS256), jwt);
-		signedJwt.sign(new MACSigner(JWT_ENCRYPT_SIGN.getEncoded()));
-		
-		return signedJwt;
-		
-	};
-	
-	/** JWT 암호화 = JWE */
-	private JWEObject encryptJwt(SignedJWT token) throws JOSEException {
-		
-		JWEObject jweObject = new JWEObject(
-			new JWEHeader.Builder(JWEAlgorithm.DIR, EncryptionMethod.A256GCM).contentType("JWT").build(),
-			new Payload(token)
-		);
-		
-		jweObject.encrypt(new DirectEncrypter(JWT_ENCRYPT_TOKEN.getEncoded()));
-		return jweObject;
-		
-	};
-	
-	/** 사용자의 마지막 접속일을 갱신 */
-	private void updateLastLoginDate(String id) {
-//		authDao.updateLastLoginDate(id);
-	};
 	
 	/** 리소스 경로가 아니거나, /refresh 경로 + 특정조건 맞지 않는 경우 */
-	private void activateRedirect(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws IOException, ServletException {
+	private void redirect(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws IOException, ServletException {
 		
 		/** 쿠키에서 토큰을 가져와서 */
 		Cookie[] cookies = request.getCookies();
 		String token = null;
-		if(cookies != null) {
-			token = Arrays.stream(cookies)
-					.filter(cookie -> JWT_NAME.equals(cookie.getName()))
-					.findFirst()
-					.map(Cookie::getValue)
-					.orElse(null);
-		};
+		if(cookies != null)
+			token = CookieUtil.extractValue(request, cookies, JWT_NAME);
 		
 		/** 토큰이 존재하고, 검증서버에 검증요청의 반환이 유효하다면 이전페이지 or 메인페이지로 이동 */
 		if(token != null && validateToken(request, token)) {
@@ -283,7 +187,7 @@ public class Redirect extends OncePerRequestFilter {
 			String referer = request.getHeader("Referer");
 			
 			/** Redirect 경로 검증 */
-			if(validateReferer(referer)) { response.sendRedirect(referer); }
+			if(RedirectUtil.validateReferer(referer)) { response.sendRedirect(referer); }
 			else { response.sendRedirect(HOME_SERVER); }
 			return;
 			
@@ -327,93 +231,51 @@ public class Redirect extends OncePerRequestFilter {
 		
 	};
 	
-	/** Redirect 경로 확인 */
-	private boolean validateReferer(String referer) {
-		return referer != null && (
-			referer.startsWith("http://localhost")
-			|| referer.startsWith("http://dev.st2lla.co.kr")
-			|| referer.startsWith("https://login.dev.st2lla.co.kr")
-			|| referer.startsWith("http://intra.st2lla.co.kr")
-			|| referer.startsWith("https://intra.st2lla.co.kr")
-		) && !referer.startsWith("http://localhost:8080");
-	};
-	
-	/**
-	 * 쿠키삭제 + Remember Me 제거 + Redis 제거
-	 */
+	/** 쿠키 제거 + Redis 제거 + Remember Me 제거 */
 	private void clearAuth(HttpServletResponse response, String token, Cookie[] cookies) {
 		
 		/** 쿠키 제거 */
-		clearCookie(response, cookies);
+		CookieUtil.clearCookie(response, cookies, JWT_NAME, JWT_DOMAIN, JWT_PATH);
 		
+		/** Redis 제거 + Remember Me 제거 */
+		clearRedisAndRefreshToken(response, token, cookies);
+		
+	};
+	
+	/** Redis 제거 + Remember Me 제거 */
+	private void clearRedisAndRefreshToken(HttpServletResponse response, String token, Cookie[] cookies) {
+		
+		/** Redis와 Remember Me 초기화를 위한 JTI 조회를 위한 설정 */
 		RestTemplate template = new RestTemplate();
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_JSON);
 		headers.set(JWT_HEADER, JWT_KEY + token);
 		
-		/** token에서 jti를 얻고, jti에서 ID와 사용자 기기 식별정보를 추출 */
-		RefreshTokenDto dto = extractTokenData(template, headers);
+		/**
+		 * Redis와 Remember Me 초기화를 위한 JTI 조회
+		 * - token에서 jti를 얻고, jti에서 ID와 사용자 기기 식별정보를 추출
+		 * - 존재한다면 Redis 제거 + Remember Me 제거
+		 *   > 제거하기 위한 데이터가 불러와졌으므로
+		 * */
+		RefreshTokenDto dto = TokenUtil.getJTI(template, headers, JTI_SERVER);
 		if(dto != null) {
+			
 			/** Redis 제거 */
-			clearRedis(dto.getId() + "::" + dto.getDevice());
+			RedisUtil.revoke(redisTemplate, dto.getId() + "::" + dto.getDevice());
+			
 			/** Remember Me - Refresh Token 제거 */
-			clearRefreshToken(dto);
+			if(authDao.getRefreshToken(dto) >= 1)
+				authDao.delRefreshToken(dto);
+			
 		}
 		
-	};
-
-	/** token에서 jti를 얻고, jti에서 ID와 사용자 기기 식별정보를 추출 */
-	private RefreshTokenDto extractTokenData(RestTemplate template, HttpHeaders headers) {
-		
-		RefreshTokenDto dto = new RefreshTokenDto();
-		HttpEntity<String> entity = new HttpEntity<>("", headers);
-		ResponseEntity<String> res = template.exchange(JTI_SERVER, HttpMethod.GET, entity, String.class);
-		
-		String[] split = res.getBody().split("::");
-		if(split.length < 2)
-			return null;
-		
-		dto.setId(split[0]);
-		dto.setDevice(split[1]);
-		
-		return dto;
-		
-	};
-	
-	/** Redis 제거 */
-	private void clearRedis(String key) {
-		redisTemplate.delete(key);
-	};
-	
-	/** Remember Me - Refresh Token 제거 */
-	private void clearRefreshToken(RefreshTokenDto dto) {
-		if(authDao.getRefreshToken(dto) >= 1)
-			authDao.delRefreshToken(dto);
-	};
-	
-	/** 쿠키 제거 */
-	private void clearCookie(HttpServletResponse response, Cookie[] cookies) {
-		Arrays.stream(cookies)
-			.filter(cookie -> JWT_NAME.equals(cookie.getName()))
-			.forEach(cookie -> {
-				
-				cookie.setDomain(JWT_DOMAIN);
-				cookie.setValue("");
-				cookie.setMaxAge(0);
-				cookie.setPath(JWT_PATH);
-				
-				response.addCookie(cookie);
-				
-			});
 	};
 	
 	/** 세션 초기화 */
 	private void clearSession(HttpServletRequest request) {
-		
 		HttpSession session = request.getSession(false);
 		if(session != null)
 			session.invalidate();
-		
 	};
 	
 //	/**

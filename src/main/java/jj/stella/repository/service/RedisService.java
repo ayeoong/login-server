@@ -53,7 +53,7 @@ public class RedisService {
 				result.put(field.getName(), field.get(dto));
 			}
 			
-			catch (IllegalAccessException e) {
+			catch(IllegalAccessException e) {
 				/** 예외 처리 로직 */
 				throw new RuntimeException("Failed to access field value", e);
 			}

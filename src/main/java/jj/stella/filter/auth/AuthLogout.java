@@ -53,7 +53,7 @@ public class AuthLogout implements LogoutSuccessHandler {
 		throws IOException, ServletException {
 		
 		/** Redis 제거 + 쿠키삭제 + Remember Me 제거 */
-		resetAuth(request, response);
+		clearAuth(request, response);
 		
 		/** 세션 초기화 */
 		clearSession(request);
@@ -66,7 +66,7 @@ public class AuthLogout implements LogoutSuccessHandler {
 	
 	/**
 	 * 1. 쿠키가 존재할 경우
-	 * - Redis 제거 + 쿠키삭제 + Remember Me 제거
+	 * - 쿠키 제거 + Redis 제거 + Remember Me 제거
 	 * 
 	 * 2. 쿠키가 존재하지 않는경우
 	 * - Redis는 TTL때문에 어차피 n시간 후에 지워짐
@@ -76,7 +76,7 @@ public class AuthLogout implements LogoutSuccessHandler {
 	 *   > Device는 로그인 서버의 localStorage에 저장됨
 	 *   > 로그인 시도할 때 localStorage에 존재하는 Device값을 가져와서 활용하고, 아니라면 JS로 생성함
 	 */
-	private void resetAuth(HttpServletRequest request, HttpServletResponse response) {
+	private void clearAuth(HttpServletRequest request, HttpServletResponse response) {
 		
 		Cookie[] cookies = request.getCookies();
 		if(cookies != null) {

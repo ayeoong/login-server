@@ -25,6 +25,7 @@ import jj.stella.filter.auth.AuthDetails;
 import jj.stella.repository.dao.AuthDao;
 import jj.stella.util.auth.AuthUtil;
 import jj.stella.util.cookie.CookieUtil;
+import jj.stella.util.jwt.RedirectUtil;
 import jj.stella.util.jwt.TokenUtil;
 import jj.stella.util.redis.RedisUtil;
 
@@ -99,7 +100,7 @@ public class JwtIssue extends OncePerRequestFilter {
 			 * Axios로 요청이 왔기 때문에 경로를 설정후 반환해야 함.
 			 * ( sendRedirect가 동작하지 않음. )
 			 * */ 
-			redirectToOrigin(request, response);
+			redirect(request, response);
 			
 			/** 중요. / 이후 FilterChain이 동작하지 않도록 여기서 반환 */
 			return;
@@ -115,7 +116,7 @@ public class JwtIssue extends OncePerRequestFilter {
 		try {
 			
 			/** 인증토큰 발급( JWE = 암호화된 JWT ) */
-			String JWE_TOKEN = TokenUtil.issueToken(
+			String JWE_TOKEN = TokenUtil.issueJWE(
 				id, details,
 				JWT_ENCRYPT_SIGN, JWT_ENCRYPT_TOKEN,
 				JWT_ISSUER, JWT_AUDIENCE, JWT_EXPIRED
@@ -132,9 +133,9 @@ public class JwtIssue extends OncePerRequestFilter {
 			 * 2. 인증 재발급 요청( 검증서버에서 로그인서버로 /refresh 요청 )
 			 * 이 성공하는 경우 요청을 보낸 서버에서 쿠키의 생명을 연장함
 			 * */
-			CookieUtil.setCookie(JWT_NAME, JWE_TOKEN, JWT_DOMAIN, JWT_PATH, (int) (((JWT_EXPIRED * 8 * 365) / 2) / 1000), response);
+			CookieUtil.setCookie(response, JWT_NAME, JWE_TOKEN, JWT_DOMAIN, JWT_PATH, (int) (((JWT_EXPIRED * 8 * 365) / 2) / 1000));
 			
-		} catch (JOSEException e) {
+		} catch(JOSEException e) {
 			SecurityContextHolder.clearContext();
 			throw new RuntimeException("JWT Issue and Encryption Error: ", e);
 		}
@@ -149,7 +150,7 @@ public class JwtIssue extends OncePerRequestFilter {
 			dto.setDevice(details.getDevice());
 			
 			/** Refresh Token 발급( JWE = 암호화된 JWT ) */
-			dto.setToken(TokenUtil.issueToken(id, details,
+			dto.setToken(TokenUtil.issueJWE(id, details,
 				JWT_ENCRYPT_REFRESH_SIGN, JWT_ENCRYPT_REFRESH_TOKEN,
 				JWT_REFRESH_ISSUER, JWT_REFRESH_AUDIENCE, JWT_EXPIRED * 8 * 365
 			));
@@ -157,7 +158,7 @@ public class JwtIssue extends OncePerRequestFilter {
 			/** Refresh Token DB저장 */
 			authDao.regRefreshToken(dto);
 			
-		} catch (JOSEException e) {
+		} catch(JOSEException e) {
 			SecurityContextHolder.clearContext();
 			throw new RuntimeException("JWT Issue and Encryption Error: ", e);
 		}
@@ -169,12 +170,12 @@ public class JwtIssue extends OncePerRequestFilter {
 	 * ( sendRedirect가 동작하지 않음. )
 	 * 즉, 기존에 작성했던 AuthSuccess 유틸의 로직을 여기서 동작하게 함.
 	 * */ 
-	private void redirectToOrigin(HttpServletRequest request, HttpServletResponse response) throws IOException {
+	private void redirect(HttpServletRequest request, HttpServletResponse response) throws IOException {
 		
 		String referer = request.getParameter("referer");
 		
 		/** Redirect 경로 검증 */
-		String redirectURL = validateReferer(referer)? referer:HOME_SERVER;
+		String redirectURL = RedirectUtil.validateReferer(referer)? referer:HOME_SERVER;
 		response.setContentType(MediaType.APPLICATION_JSON_VALUE);
 		response.setCharacterEncoding("UTF-8");
 		response.setStatus(HttpServletResponse.SC_OK);
@@ -187,17 +188,6 @@ public class JwtIssue extends OncePerRequestFilter {
 		response.getWriter().write(result);
 		response.getWriter().flush();
 		
-	};
-	
-	/** Redirect 경로 확인 */
-	private boolean validateReferer(String referer) {
-		return referer != null && (
-			referer.startsWith("http://localhost")
-			|| referer.startsWith("http://dev.st2lla.co.kr")
-			|| referer.startsWith("https://dev.st2lla.co.kr")
-			|| referer.startsWith("http://intra.st2lla.co.kr")
-			|| referer.startsWith("https://intra.st2lla.co.kr")
-		) && !referer.startsWith("http://localhost:8080");
 	};
 	
 }
