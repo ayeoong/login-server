@@ -24,16 +24,15 @@ public class AuthDaoImpl implements AuthDao {
 	public UserVo getUser(UserDto dto) {
 		return sqlSession.selectOne("getUser", dto);
 	};
-
 	/** 로그인 결과 저장 */
 	@Override
 	public void regLoginResult(ResultDto dto) {
 		sqlSession.insert("regLoginResult", dto);
 	};
-//	/** 로그인 결과 저장 - 실패 */
+//	/** 사용자의 마지막 접속일을 갱신 */
 //	@Override
-//	public void loginFailure(String id) {
-//		sqlSession.insert("loginFailure", id);
+//	public void uptLoginDate(String id) {
+//		sqlSession.update("uptLoginDate", id);
 //	};
 	
 	/** Refresh Token 조회 */
@@ -51,17 +50,5 @@ public class AuthDaoImpl implements AuthDao {
 	public void delRefreshToken(RefreshTokenDto dto) {
 		sqlSession.delete("delRefreshToken", dto);
 	};
-	
-//	/** 로그저장 ( 스케줄 - 매일 오전 6시, 오후 18시 ) */
-//	@Override
-//	public int createRedisLog(List<Map<String, Object>> data) {
-//		return sqlSession.insert("createRedisLog", data);
-//	};
-//	
-//	/** 사용자의 마지막 접속일을 갱신 */
-//	@Override
-//	public void updateLastLoginDate(String id) {
-//		sqlSession.update("updateLastLoginDate", id);
-//	};
 	
 }
