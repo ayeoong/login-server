@@ -154,7 +154,7 @@ public class SecurityConfig {
 				JWT_HEADER, JWT_KEY, JWT_NAME, JWT_ISSUER, JWT_AUDIENCE, JWT_EXPIRED,
 				JWT_DOMAIN, JWT_PATH, JTI_SERVER,
 				encryptSignKey(JWT_ENCRYPT_SIGN), encryptTokenKey(JWT_ENCRYPT_TOKEN),
-				AUTH_SERVER, HOME_SERVER, authDao, redisTemplate
+				AUTH_SERVER, HOME_SERVER, authDao, authUtil, redisTemplate
 			), UsernamePasswordAuthenticationFilter.class)
 			// 로그인, 로그아웃 이후 응답헤더에 XSRF-TOKEN을 보내기 위함. ( 갱신 )
 			.addFilterAfter(new Csrf(), CsrfFilter.class)

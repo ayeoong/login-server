@@ -9,7 +9,6 @@
 		FROM user
 		WHERE id = #{username}
 	</select>
-	
 	<!-- 로그인 결과 저장 -->
 	<insert id="regLoginResult" parameterType="jj.stella.entity.dto.ResultDto">
 		<selectKey resultType="int" keyProperty="ino" order="BEFORE">
@@ -18,6 +17,12 @@
 		INSERT INTO login_result(userIdx, type, ip)
 		VALUES (#{ino}, #{type}, #{ip});
 	</insert>
+	<!-- 사용자의 마지막 접속일을 갱신 -->
+<!-- 	<update id="updateLastLoginDate" parameterType="String"> -->
+<!-- 		UPDATE user -->
+<!-- 		SET loginDate = NOW() -->
+<!-- 		WHERE originId = #{id}; -->
+<!-- 	</update> -->
 	
 	<!-- Refresh Token 조회 -->
 	<select id="getRefreshToken" parameterType="jj.stella.entity.dto.RefreshTokenDto" resultType="int">
@@ -47,12 +52,5 @@
 <!-- 		(#{v.ino}, #{v.section}, #{v.conts}, #{v.date}, NOW()) -->
 <!-- 		</foreach> -->
 <!-- 	</insert> -->
-	
-	<!-- 사용자의 마지막 접속일을 갱신 -->
-<!-- 	<select id="updateLastLoginDate" parameterType="String"> -->
-<!-- 		UPDATE user -->
-<!-- 		SET loginDate = NOW() -->
-<!-- 		WHERE originId = #{id}; -->
-<!-- 	</select> -->
 	
 </mapper>

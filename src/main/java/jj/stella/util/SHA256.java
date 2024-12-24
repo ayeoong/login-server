@@ -352,7 +352,7 @@ public class SHA256 {
 
 			result = stringbuffer.toString();
 			
-		} catch (Exception e) {
+		} catch(Exception e) {
 			e.printStackTrace();
 		}
 		
